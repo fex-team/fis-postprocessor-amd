@@ -9,6 +9,7 @@
  * 4. 依赖前置
  */
 var lib = require('./lib/');
+var pth = require('path');
 
 var parser = module.exports = function(content, file, conf) {
     
@@ -40,8 +41,7 @@ var parser = module.exports = function(content, file, conf) {
 
     // 其他标签，请通过 exports.scriptsReg 扩展。
 
-
-    // 读取用户自定义脚本正则。
+    // 用户也可以扩展，读取用户自定义脚本正则。
     if (conf.scriptsReg) {
         if (Array.isArray(conf.scriptsReg)) {
             parser.scriptsReg.push.apply(parser.scriptsReg, conf.scriptsReg);
@@ -53,7 +53,7 @@ var parser = module.exports = function(content, file, conf) {
 
     file.extras = file.extras || {};
     file.extras.async = [];
-    file.extras.alias = {};
+    file.extras.paths = {};
 
     if (file.isHtmlLike) {
         content = parser.parseHtml(content, file, conf);
@@ -63,7 +63,7 @@ var parser = module.exports = function(content, file, conf) {
 
     // 减少 map.json 体积
     file.extras.async.length || (delete file.extras.async);
-    isEmptyObject(file.extras.alias) && (delete file.extras.alias);
+    isEmptyObject(file.extras.paths) && (delete file.extras.paths);
     isEmptyObject(file.extras) && (delete file.extras);
 
     return content;
@@ -103,23 +103,91 @@ function strSplice(str, index, count, add) {
     return str.slice(0, index) + add + str.slice(index + count);
 }
 
-// 查找 module id.
-function resolveModuleId(id, dirname, conf) {
-    var alias = conf.alias || {};
-    var info;
+function findPkg(pkg, list) {
+    var i = 0;
+    var len = list.length;
 
-    if (!/\.js$/i.test(id) && /^(\.|\/)/.test(id)) {
-        id += '.js';
+
+    for (; i < len; i++) {
+        if (list[i].name === pkg) {
+            return list[i];
+        }
     }
 
-    info = fis.uri(id, dirname);
+    return null;
+}
 
-    if (info.file) {
-        return info;
-    } else if (alias[id]) {
-        info = fis.uri(alias[id], fis.project.getProjectPath());
-        info.isAlias = !!info.file;
-        return info;
+// 查找 module id.
+// 具体请查看 https://github.com/amdjs/amdjs-api/blob/master/CommonConfig.md
+// 
+// 目前以下配置项是有效的。
+//  paths
+//  baseUrl
+//  packages 
+function resolveModuleId(id, dirname, conf) {
+    var paths = conf.paths || {};
+    var pkgs = conf.packages || [];
+    var baseUrl = conf.baseUrl || '';
+    var root = fis.project.getProjectPath();
+    var isAlias = false;
+
+    var info, m, pkg, path, dirs, item, dir, i, len;
+    
+    if (id[0] === '.') {
+        
+        // 相对路径
+        info = fis.uri(id, dirname);
+        info.file || (info = fis.uri(id + '.js', dirname));
+    } else if (id[0] === '/') {
+        
+        // 绝对路径。
+        id = id.substring(1);
+        info = fis.uri(id, root);
+        info.file || (info = fis.uri(id + '.js', root));
+    } else if ((m = /^([^\/]+)(?:\/(.*))?$/.exec(id))) {
+        pkg = m[1];
+        path = m[2] || '';
+
+        // 先查找 conf.paths
+        if (paths[pkg]) {
+            dirs = paths[pkg];
+
+            Array.isArray(dirs) || (dirs = [dirs]);
+            
+            for (i = 0, len = dirs.length; i < len; i++) {
+                dir = dirs[i];
+
+                if (dir[0] !== '/') {
+                    dir = pth.join(baseUrl, dir);
+                }
+
+                if (path) {
+                    info = fis.uri(path, dir);
+                    info.file || (info = fis.uri(path + '.js', dir));
+                } else {
+                    info = fis.uri(dir, root);
+                }
+            }
+
+        // 再查找 conf.packages
+        } else if ((item = findPkg(pkg, pkgs))) {
+            dir = baseUrl;
+            if (dir[0] !== '/') {
+                dir = pth.join(root, dir);
+            }
+
+            dir = pth.join(dir, item.location || item.name);
+            path = path || item.main || 'main';
+            info = fis.uri(path, dir);            
+            info.file || (info = fis.uri(path + '.js', dir));
+        }
+
+        isAlias = true;
+    }
+
+    return {
+        isAlias: info && info.file && isAlias,
+        file: info && info.file
     }
 }
 
@@ -127,7 +195,6 @@ function resolveModuleId(id, dirname, conf) {
 parser.parseJs = function(content, file, conf) {
     var modules = lib.getAMDModules(content);
     var suffix = '';
-    var anonymousDefineCount = 0;
     var diff, converter, requires;
 
     // 没找到 amd 定义, 则需要包装
@@ -138,6 +205,8 @@ parser.parseJs = function(content, file, conf) {
 
     converter = getConverter(content);
     diff = 0;
+
+    file._anonymousDefineCount = file._anonymousDefineCount || 0;
     
     // 编译所有模块定义列表
     modules.forEach(function(module) {
@@ -172,7 +241,6 @@ parser.parseJs = function(content, file, conf) {
                 target = resolveModuleId(v, file.dirname, conf);
 
                 if (target && target.file) {
-                    fis.compile(target.file);
                     file.addRequire(target.file.id);
                     moduleId = target.isAlias ? v :
                             target.file.moduleId || target.file.id;
@@ -203,12 +271,13 @@ parser.parseJs = function(content, file, conf) {
                     target = resolveModuleId(v, file.dirname, conf);
 
                     if (target && target.file) {
-                        fis.compile(target.file);
+                        file.removeRequire(v);
                         file.addRequire(target.file.id);
                         moduleId = target.isAlias ? v :
                                 target.file.moduleId || target.file.id;
 
-                        start = converter(elem.loc.start.line, elem.loc.start.column);
+                        start = converter(elem.loc.start.line, elem.loc.start.column) + diff;
+                        diff += (info.quote + moduleId + info.quote).length - elem.raw.length;
                         content = strSplice(content, start, elem.raw.length, info.quote + moduleId + info.quote);
 
                         // 非依赖前置
@@ -280,7 +349,7 @@ parser.parseJs = function(content, file, conf) {
         // 添加 module id
         if (!module.id) {
             
-            if (anonymousDefineCount) {
+            if (file._anonymousDefineCount) {
                 fis.log.error('The file has more than one anonymous ' +
                         'define');
                 return;
@@ -291,14 +360,18 @@ parser.parseJs = function(content, file, conf) {
             start = converter(start.line, start.column);
             start += /^define\s*\(/.exec(content.substring(start))[0].length;
             content = strSplice(content, start, 0, '\''+moduleId+'\', ');
-            anonymousDefineCount++;
+            file._anonymousDefineCount++;
         } else {
-            conf.alias = conf.alias || {};
-            conf.alias[module.id] = conf.alias[module.id] || file.subpath;
+            conf.paths = conf.paths || {};
+            conf.paths[module.id] = conf.paths[module.id] || file.subpath;
         }
     });
 
+    // console.log(content);
 
+
+    // 获取文件中异步 require
+    // require([xxx], callback);
     requires = lib.getAsyncRequires(content);
 
     if (requires.length) {
@@ -308,6 +381,8 @@ parser.parseJs = function(content, file, conf) {
         requires.forEach(function(req) {
 
             // 只有在模块中的异步才被认为是异步？
+            // 因为在 define 外面，没有这样的用法： var lib = require('string');
+            // 
             // 这块逻辑待商定！！！！！
             var async = req.isInModule;
 
@@ -320,12 +395,10 @@ parser.parseJs = function(content, file, conf) {
                 target = resolveModuleId(v, file.dirname, conf);
 
                 if (target && target.file) {
-                    fis.compile(target.file);
-
                     if (async) {
                         if (!~file.extras.async.indexOf(target.file.id)) {
                             file.extras.async.push(target.file.id);
-                            file.extras.alias[v] = target.file.id;
+                            target.isAlias && (file.extras.paths[v] = target.file.id);
                         }
                     } else {
                         file.addRequire(target.file.id);
