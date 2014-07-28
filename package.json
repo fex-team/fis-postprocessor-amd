@@ -1,0 +1,24 @@
+{
+  "name": "fis-postprocessor-amd",
+  "version": "0.0.1",
+  "description": "fis-postprocessor-amd ===========================",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fex-team/fis-postprocessor-amd.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/fex-team/fis-postprocessor-amd/issues"
+  },
+  "homepage": "https://github.com/fex-team/fis-postprocessor-amd",
+  "dependencies": {
+    "escope": "~1.0.1",
+    "esprima": "~1.2.2",
+    "estraverse": "~1.5.1"
+  }
+}
