@@ -1,5 +1,12 @@
 /**
  * @fileOverview 解析 js 中 amd 依赖。
+ *
+ * 功能介绍：
+ *
+ * 1. amd 包装 js 代码。如果已经 包装过则不包装。
+ * 2. 给匿名 module 设置 module id.
+ * 3. 添加同步和异步依赖到 map.json 文件里面。
+ * 4. 依赖前置
  */
 var lib = require('./lib/');
 
@@ -44,13 +51,7 @@ var parser = module.exports = function(content, file, conf) {
     }
 
 
-    var initial = false;
-
-    if (file.extras == undefined) {
-        file.extras = {};
-        initial = true;
-    }
-
+    file.extras = file.extras || {};
     file.extras.async = [];
     file.extras.alias = {};
 
@@ -60,15 +61,10 @@ var parser = module.exports = function(content, file, conf) {
         content = parser.parseJs(content, file, conf);
     }
 
-    // 如果为空，且 file.extras 数组是我加的，则把它 delete 掉。
-    if (file.extras.async.length == 0) {
-        delete file.extras.async;
-        delete file.extras.alias;
-        
-        if (initial) {
-            delete file.extras;
-        }
-    }
+    // 减少 map.json 体积
+    file.extras.async.length || (delete file.extras.async);
+    isEmptyObject(file.extras.alias) && (delete file.extras.alias);
+    isEmptyObject(file.extras) && (delete file.extras);
 
     return content;
 };
@@ -131,6 +127,7 @@ function resolveModuleId(id, dirname, conf) {
 parser.parseJs = function(content, file, conf) {
     var modules = lib.getAMDModules(content);
     var suffix = '';
+    var anonymousDefineCount = 0;
     var diff, converter, requires;
 
     // 没找到 amd 定义, 则需要包装
@@ -142,6 +139,7 @@ parser.parseJs = function(content, file, conf) {
     converter = getConverter(content);
     diff = 0;
     
+    // 编译所有模块定义列表
     modules.forEach(function(module) {
         var argsRaw = [];
         var deps = [];
@@ -149,47 +147,28 @@ parser.parseJs = function(content, file, conf) {
         var moduleId, start, end, params;
         
         params = module.factory.params;
-        params.forEach(function(param) {
+        params && params.forEach(function(param) {
             argsRaw.push(param.name);
         });
 
-        // 添加依赖。
-        (module.deps || []).forEach(function(elem) {
-            var v = elem.raw;
-            var info = fis.util.stringQuote(v);
-            var target, moduleId;
+        // deps 是指 define 的第二个参数中指定的依赖列表。
+        if (module.deps && module.deps.length) {
 
-            v = elem.value;
+            // 添加依赖。
+            module.deps.forEach(function(elem) {
+                var v = elem.raw;
+                var info = fis.util.stringQuote(v);
+                var target, moduleId;
 
-            if (~'require,module,exports'.indexOf(v)) {
-                return;
-            }
+                v = elem.value;
 
-            target = resolveModuleId(v, file.dirname, conf);
+                // 不需要查找依赖，如果是 require、module、或者 exports.
+                if (~'require,module,exports'.indexOf(v)) {
+                    deps.push(elem.raw);
+                    args.push(argsRaw.shift());
+                    return;
+                }
 
-            if (target && target.file) {
-                fis.compile(target.file);
-                file.addRequire(target.file.id);
-                moduleId = target.isAlias ? v :
-                        target.file.moduleId || target.file.id;
-
-                deps.push(info.quote + moduleId + info.quote);
-                args.push(argsRaw.shift());
-            } else {
-                fis.log.warning('Can not find module `' + v + '`');
-            }
-        });
-
-        (module.syncRequires || []).forEach(function(item) {
-            var elem = item.node.arguments[0];
-            var v = elem.value;
-            var info = fis.util.stringQuote(elem.raw);
-            var target, moduleId, val, start, end;
-
-            // alreay resolved
-            if (/^\w+:/.test(v)) {
-                moduleId = v;
-            } else {
                 target = resolveModuleId(v, file.dirname, conf);
 
                 if (target && target.file) {
@@ -198,34 +177,82 @@ parser.parseJs = function(content, file, conf) {
                     moduleId = target.isAlias ? v :
                             target.file.moduleId || target.file.id;
 
-                    // 非依赖前置
-                    if (!conf.forwardDeclaration) {
-                        start = converter(elem.loc.start.line, elem.loc.start.column);
-                        content = strSplice(content, start, elem.raw.length, info.quote + moduleId + info.quote);
-                        return;
-                    }
+                    deps.push(info.quote + moduleId + info.quote);
+                    args.push(argsRaw.shift());
                 } else {
                     fis.log.warning('Can not find module `' + v + '`');
                 }
+            });
+        } else {
+            args = argsRaw.concat();
+        }
+
+        // module 中的 require(string) 列表。
+        if (module.syncRequires && module.syncRequires.length) {
+
+            module.syncRequires.forEach(function(item) {
+                var elem = item.node.arguments[0];
+                var v = elem.value;
+                var info = fis.util.stringQuote(elem.raw);
+                var target, moduleId, val, start, end;
+
+                // alreay resolved
+                if (/^\w+:/.test(v)) {
+                    moduleId = v;
+                } else {
+                    target = resolveModuleId(v, file.dirname, conf);
+
+                    if (target && target.file) {
+                        fis.compile(target.file);
+                        file.addRequire(target.file.id);
+                        moduleId = target.isAlias ? v :
+                                target.file.moduleId || target.file.id;
+
+                        start = converter(elem.loc.start.line, elem.loc.start.column);
+                        content = strSplice(content, start, elem.raw.length, info.quote + moduleId + info.quote);
+
+                        // 非依赖前置
+                        if (!conf.forwardDeclaration) {
+                            return;
+                        }
+                    } else {
+                        fis.log.warning('Can not find module `' + v + '`');
+                    }
+                }
+
+                deps.push(info.quote + moduleId + info.quote);
+            });
+
+            // define(function(require) {
+            //      var a = require('a');
+            //      var b = require('b');
+            // });
+            // 
+            // define(['require', 'exports', 'module'], function(require, exports) {
+            //      var a = require('a');
+            //      var b = require('b');
+            // });
+            // 
+            if (conf.forwardDeclaration) {
+
+                if (!args.length) {
+                    args.push('require');
+                }
+
+                if (args[0] === 'require' && deps[0].substring(1, 8) !== 'require') {
+                    deps.unshift('\'require\'');
+                }
+
+                if (args[1] === 'exports' && deps[1].substring(1, 8) !== 'exports') {
+                    deps.splice(1, 0, '\'exports\'');
+                }
+
+                if (args[2] === 'module' && deps[2].substring(1, 7) !== 'module') {
+                    deps.splice(2, 0, '\'module\'');
+                }
             }
-
-            val = item.parent.id.name;
-            deps.push(info.quote + moduleId + info.quote);
-            args.push(val);
-
-            // 去掉 require 代码。
-            start = converter(item.parent.loc.start.line, item.parent.loc.start.column);
-            end = converter(item.parent.loc.end.line, item.parent.loc.end.column);
-
-            if (content.substring(end, end + 1) === ';') {
-                var m = /(var|,)\s*$/.exec(content.substring(0, start));
-                end += m[1] === 'var' ? 1 : 0;
-                start -= m[0].length;
-            } else if (content.substring(end, end + 1) === ',') {
-                end += 1;
-            }
-            content  = strSplice(content, start, end - start, '');
-        });
+        }
+        
 
         // 替换 factory args.
         if (args.length) {
@@ -252,10 +279,19 @@ parser.parseJs = function(content, file, conf) {
 
         // 添加 module id
         if (!module.id) {
+            
+            if (anonymousDefineCount) {
+                fis.log.error('The file has more than one anonymous ' +
+                        'define');
+                return;
+            }
+
             moduleId = file.moduleId || file.id;
             start = module.node.loc.start;
             start = converter(start.line, start.column);
-            content = strSplice(content, start + 'define('.length, 0, '\''+moduleId+'\', ');
+            start += /^define\s*\(/.exec(content.substring(start))[0].length;
+            content = strSplice(content, start, 0, '\''+moduleId+'\', ');
+            anonymousDefineCount++;
         } else {
             conf.alias = conf.alias || {};
             conf.alias[module.id] = conf.alias[module.id] || file.subpath;
@@ -343,4 +379,13 @@ function wrapAMD(content, file, conf) {
     content = 'define(\'' + moduleId + '\', function() {\n' + content + '\n});';
 
     return content;
+}
+
+function isEmptyObject(obj) {
+
+    for (var key in obj) {
+        return false;
+    }
+
+    return true;
 }
