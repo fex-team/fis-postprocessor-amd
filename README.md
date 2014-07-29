@@ -163,8 +163,16 @@ fis.config.merge({
 
     如果不想启用此用法，请关闭此配置项，或者把异步 require 放在 define 中，然后同步引用新 define 的 moudle 来实现。
 4. `moduleIdTpl` 默认为 `${namespace}${subpathNoExt}` 此为 fis 默认给匿名 define 自动的补的 module id 模板。可以是使用 fis.config 变量，或者 file 里面的属性变量。
-5. `baseUrl` fis 中对 module id  的查找根目录。
-6. `paths` 请查看上面的说明
-7. `packages` 请查看上面的说明
+5. `scriptsReg` 默认只识别以下写法的 script 片段，可以同过扩展此数组来支持其他格式。
+    
+    ```tpl
+    <script type="text/javascript">js 片段</script>
+    {%script%}js 片段{%/script%}
+    {% script %}js 片段{% endscript %}
+    ```
+
+6. `baseUrl` fis 中对 module id  的查找根目录。
+7. `paths` 请查看上面的说明
+8. `packages` 请查看上面的说明
 
 

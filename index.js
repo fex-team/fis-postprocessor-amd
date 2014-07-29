@@ -11,7 +11,7 @@
 var lib = require('./lib/');
 var pth = require('path');
 
-// 自定义的 module id 表。
+// 自定义的 module id 表。为了方便查找。
 // key : module id.
 // value: file.subpath
 var map = {};
