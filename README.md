@@ -6,13 +6,13 @@ fis amd 支持，完全满足 [amdjs](https://github.com/amdjs/amdjs-api) 规范
 
 ## 如何使用？
 
-```
+```bash
 npm install -g fis-postprocessor-amd
 ```
 
 配置 fisconf.js
 
-```
+```javascript
 fis.config.merge({
     modules: {
 
@@ -30,7 +30,7 @@ fis.config.merge({
 2. 全局的异步 require(deps, callback) 中的依赖会被提前加载进来， 减少 http 请求数。（当然在 module 中的异步不会把依赖提前加载进来。）
 3. 支持以下各种用法：
 
-    ```
+    ```javascript
     define({
         xxx: 123
     });
