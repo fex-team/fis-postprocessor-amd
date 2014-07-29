@@ -79,7 +79,7 @@ fis.config.merge({
         - paths 中是否有定义。
         - packages 中是否有定义。
 
-        比如：
+        比如：更多信息请查看[amdjs 中config 说明](https://github.com/amdjs/amdjs-api/blob/master/CommonConfig.md)。不同的是这里路径是相对于本地文件夹项目目录，而那边是相对于页面的目录。
 
         ```javascript
         fis.config.merge({
@@ -89,6 +89,10 @@ fis.config.merge({
                     amd: {
                         baseUrl: './widget/lib/',
                         paths: {
+
+                            // 相对于  baseUrl 
+                            // 如果是绝对路径则相对与 root.
+                            // base 的值可以是字符串，也可以是数组，会按顺序超找。
                             base: './base/base.js'
                         },
                         packages: [
