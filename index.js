@@ -179,8 +179,15 @@ function resolveModuleId(id, dirname, conf) {
     var isAlias = false;
 
     var info, m, pkg, path, dirs, item, dir, i, len;
-    
-    if (id[0] === '.') {
+
+    var idx = id.indexOf(':');
+    var ns, subpath;
+    if (~idx && (ns = id.substring(0, idx)) && ns == fis.config.get('namespace')) {
+        subpath = id.substring(idx + 1);
+
+        info = fis.uri(subpath, root);
+        info.file || (info = fis.uri(subpath + '.js', root));
+    } else if (id[0] === '.') {
         
         // 相对路径
         info = fis.uri(id, dirname);
@@ -314,31 +321,25 @@ parser.parseJs = function(content, file, conf) {
                 var info = fis.util.stringQuote(elem.raw);
                 var target, moduleId, val, start, end;
 
-                // alreay resolved
-                // todo 有可能target 也是自定义 id 的。
-                if (/^\w+:/.test(v)) {
-                    moduleId = v;
-                } else {
-                    target = resolveModuleId(v, file.dirname, conf);
+                target = resolveModuleId(v, file.dirname, conf);
 
-                    if (target && target.file) {
-                        file.removeRequire(v);
-                        file.addRequire(target.file.id);
-                        compileFile(target.file);
-                        moduleId = getModuleId(v, target.file, conf );
-                        file.extras.paths[moduleId] = target.file.id;
+                if (target && target.file) {
+                    file.removeRequire(v);
+                    file.addRequire(target.file.id);
+                    compileFile(target.file);
+                    moduleId = getModuleId(v, target.file, conf );
+                    file.extras.paths[moduleId] = target.file.id;
 
-                        start = converter(elem.loc.start.line, elem.loc.start.column) + diff;
-                        diff += moduleId.length - elem.value.length;
-                        content = strSplice(content, start, elem.raw.length, info.quote + moduleId + info.quote);
+                    start = converter(elem.loc.start.line, elem.loc.start.column) + diff;
+                    diff += moduleId.length - elem.value.length;
+                    content = strSplice(content, start, elem.raw.length, info.quote + moduleId + info.quote);
 
-                        // 非依赖前置
-                        if (!conf.forwardDeclaration) {
-                            return;
-                        }
-                    } else {
-                        fis.log.warning('Can not find module `' + v + '`');
+                    // 非依赖前置
+                    if (!conf.forwardDeclaration) {
+                        return;
                     }
+                } else {
+                    fis.log.warning('Can not find module `' + v + '`');
                 }
 
                 deps.push(info.quote + moduleId + info.quote);
