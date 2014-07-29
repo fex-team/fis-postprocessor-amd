@@ -77,10 +77,10 @@ fis.config.merge({
 
         - 尝试在 `baseUrl` 配置中找。
         - paths 中是否有定义。
-        _ packages 中是否有定义。
+        - packages 中是否有定义。
 
         比如：
-        
+
         ```javascript
         fis.config.merge({
 
