@@ -114,5 +114,57 @@ fis.config.merge({
         });
         ```
 
+## 配置项说明
+
+1. `forwardDeclaration` 默认为 `true` 是否进行依赖前置转换。这样做可以让 amd 加载器更快解析到依赖。
+
+    before:
+
+    ```javascript
+    define(function(require) {
+        var a = require('./a');
+        var b = require('./b');
+
+        return {
+
+        }
+    });
+    ```
+
+    after
+
+    ```javascript
+    define('moduleId', ['require', './a', '.b'], function() {
+        var a = require('./a');
+        var b = require('./b');
+
+        return {
+
+        }
+    });
+    ```
+2. `genAsyncDeps` 默认为 `true` 是否对异步依赖生成资源表。对于有异步依赖的文件，都会自动的生成一个 `同名文件` + 'async-map.js' 文件，并让此文件依赖新生成的 `async-map.js`。以下是一个示例文件。
+
+    ```javascript
+    require.config({"paths":{
+        "amdtest/widget/lib/base/util": "/amdtest/widget/lib/base/util_51e59c9",
+        "base": "/amdtest/widget/lib/base/base_288c046"
+    }});
+    ```
+3. `globalAsyncAsSync` 默认为 `true`，因为全局 `require` 方法不支持同步加载，只能异步加载。
+
+    ```javascript
+    require(['xxx'], function() {
+
+    });
+    ```
+
+    为了减少 http 请求数，此工具会把全局环境（不在 define 中）下 require([xxx], cb) 的用法认为是同步加载，会提前把相应依赖加载进来。
+
+    如果不想启用此用法，请关闭此配置项，或者把异步 require 放在 define 中，然后同步引用新 define 的 moudle 来实现。
+4. `moduleIdTpl` 默认为 `${namespace}${subpathNoExt}` 此为 fis 默认给匿名 define 自动的补的 module id 模板。可以是使用 fis.config 变量，或者 file 里面的属性变量。
+5. `baseUrl` fis 中对 module id  的查找根目录。
+6. `paths` 请查看上面的说明
+7. `packages` 请查看上面的说明
 
 
