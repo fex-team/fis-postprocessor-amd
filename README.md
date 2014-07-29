@@ -134,7 +134,7 @@ fis.config.merge({
     after
 
     ```javascript
-    define('moduleId', ['require', './a', '.b'], function() {
+    define('moduleId', ['require', './a', '.b'], function(require) {
         var a = require('./a');
         var b = require('./b');
 
