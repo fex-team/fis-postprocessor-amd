@@ -11,8 +11,24 @@
 var lib = require('./lib/');
 var pth = require('path');
 
-var parser = module.exports = function(content, file, conf) {
-    
+// 自定义的 module id 表。
+// key : module id.
+// value: file.subpath
+var map = {};
+
+// 将正则特殊字符转义。
+function pregQuote (str, delimiter) {
+    return (str + '').replace(new RegExp('[.\\\\+*?\\[\\^\\]$(){}=!<>|:\\' + (delimiter || '') + '-]', 'g'), '\\$&');
+}
+
+var inited = false;
+function init(conf) {
+
+    // 避免重复执行。
+    if (inited) {
+        return;
+    }
+
     // 左分隔符
     var ld = conf.left_delimiter ||
             fis.config.get('settings.template.left_delimiter') || '{%';
@@ -50,10 +66,27 @@ var parser = module.exports = function(content, file, conf) {
         }
     }
 
+    if (conf.genAsyncDeps) {
+        require('./lib/fis-prepackager-async-deps.js');
+    }
+
+    inited = true;
+}
+
+var parser = module.exports = function(content, file, conf) {
+    
+    init(conf);
 
     file.extras = file.extras || {};
-    file.extras.async = [];
-    file.extras.paths = {};
+
+    // 异步依赖
+    file.extras.async = file.extras.async || [];
+
+    // 同步依赖表，  module id: map id
+    file.extras.paths = file.extras.paths || {};
+
+    // 异步依赖表,  module id: map id
+    file.extras.asyncPaths = file.extras.asyncPaths || {};
 
     if (file.isHtmlLike) {
         content = parser.parseHtml(content, file, conf);
@@ -61,14 +94,16 @@ var parser = module.exports = function(content, file, conf) {
         content = parser.parseJs(content, file, conf);
     }
 
-    // 减少 map.json 体积
+    // 减少 map.json 体积，把没用的删了。
     file.extras.async.length || (delete file.extras.async);
     isEmptyObject(file.extras.paths) && (delete file.extras.paths);
+    isEmptyObject(file.extras.asyncPaths) && (delete file.extras.asyncPaths);
     isEmptyObject(file.extras) && (delete file.extras);
 
     return content;
 };
 
+// 只需把 html 中的 script 找出来，然后执行  parserJs。
 parser.parseHtml = function(content, file, conf) {
     parser.scriptsReg.forEach(function(reg) {
         content = content.replace(reg, function(m, $1, $2) {
@@ -85,15 +120,18 @@ parser.parseHtml = function(content, file, conf) {
     return content;
 };
 
+// 插件默认配置项。
 parser.defaultOptions = {
-    forwardDeclaration: true
+    forwardDeclaration: true,
+    genAsyncDeps: true,
+    moduleIdTpl: '${namespace}${subpathNoExt}',
+
+    baseUrl: '.',
+    paths: {},
+    packages: []
 };
 
-// 将正则特殊字符转义。
-function pregQuote (str, delimiter) {
-    return (str + '').replace(new RegExp('[.\\\\+*?\\[\\^\\]$(){}=!<>|:\\' + (delimiter || '') + '-]', 'g'), '\\$&');
-}
-
+// 默认 script 正则
 parser.scriptsReg = [
     /(<script(?:\s+[\s\S]*?["'\s\w\/]>|\s*>))([\s\S]*?)(?=<\/script>|$)/ig
 ];
@@ -182,6 +220,7 @@ function resolveModuleId(id, dirname, conf) {
             info.file || (info = fis.uri(path + '.js', dir));
         }
 
+        // 标记，是通过 pkg 或者 paths 查找到文件的。
         isAlias = true;
     }
 
@@ -198,7 +237,7 @@ parser.parseJs = function(content, file, conf) {
     var diff, converter, requires;
 
     // 没找到 amd 定义, 则需要包装
-    if (!modules.length && (file.isMod || conf.wrapAll)) {
+    if (!modules.length && !file.isHtmlLike && (file.isMod || conf.wrapAll)) {
         content = wrapAMD(content, file, conf);
         modules = lib.getAMDModules(content);
     }
@@ -242,8 +281,10 @@ parser.parseJs = function(content, file, conf) {
 
                 if (target && target.file) {
                     file.addRequire(target.file.id);
-                    moduleId = target.isAlias ? v :
-                            target.file.moduleId || target.file.id;
+                    compileFile(target.file);
+                    moduleId = getModuleId(v, target.file, conf );
+
+                    file.extras.paths[moduleId] = target.file.id;
 
                     deps.push(info.quote + moduleId + info.quote);
                     args.push(argsRaw.shift());
@@ -265,6 +306,7 @@ parser.parseJs = function(content, file, conf) {
                 var target, moduleId, val, start, end;
 
                 // alreay resolved
+                // todo 有可能target 也是自定义 id 的。
                 if (/^\w+:/.test(v)) {
                     moduleId = v;
                 } else {
@@ -273,11 +315,12 @@ parser.parseJs = function(content, file, conf) {
                     if (target && target.file) {
                         file.removeRequire(v);
                         file.addRequire(target.file.id);
-                        moduleId = target.isAlias ? v :
-                                target.file.moduleId || target.file.id;
+                        compileFile(target.file);
+                        moduleId = getModuleId(v, target.file, conf );
+                        file.extras.paths[moduleId] = target.file.id;
 
                         start = converter(elem.loc.start.line, elem.loc.start.column) + diff;
-                        diff += (info.quote + moduleId + info.quote).length - elem.raw.length;
+                        diff += moduleId.length - elem.value.length;
                         content = strSplice(content, start, elem.raw.length, info.quote + moduleId + info.quote);
 
                         // 非依赖前置
@@ -355,15 +398,15 @@ parser.parseJs = function(content, file, conf) {
                 return;
             }
 
-            moduleId = file.moduleId || file.id;
+            moduleId = getModuleId('', file, conf);
             start = module.node.loc.start;
             start = converter(start.line, start.column);
             start += /^define\s*\(/.exec(content.substring(start))[0].length;
             content = strSplice(content, start, 0, '\''+moduleId+'\', ');
             file._anonymousDefineCount++;
         } else {
-            conf.paths = conf.paths || {};
-            conf.paths[module.id] = conf.paths[module.id] || file.subpath;
+            // 自动填充 conf.paths 表。
+            map[module.id] = map[module.id] || file.subpath;
         }
     });
 
@@ -395,29 +438,26 @@ parser.parseJs = function(content, file, conf) {
                 target = resolveModuleId(v, file.dirname, conf);
 
                 if (target && target.file) {
+                    compileFile(target.file);
+                    moduleId = getModuleId(v, target.file, conf );
+
                     if (async) {
-                        if (!~file.extras.async.indexOf(target.file.id)) {
+                        if (!~file.extras.async.indexOf(target.file.id) && !~file.requires.indexOf(target.file.id)) {
                             file.extras.async.push(target.file.id);
-                            target.isAlias && (file.extras.paths[v] = target.file.id);
                         }
+
+                        file.extras.asyncPaths[moduleId] = target.file.id;
                     } else {
+                        file.extras.paths[moduleId] = target.file.id;
                         file.addRequire(target.file.id);
                     }
+                    
+                    start = elem.loc.start;
+                    start = converter(start.line, start.column) + diff;
 
-                    moduleId = target.file.moduleId || target.file.id;
-
-                    if (!target.isAlias) {
-                        
-                        start = elem.loc.start;
-                        start = converter(start.line, start.column) + diff;
-
-                        diff += moduleId.length - elem.value.length;
-                        content = strSplice(content, start, elem.raw.length, info.quote + moduleId + info.quote);
-                    } else if (async) {
-                        // suffix += '\n' + 'require.config({paths: {' +
-                        //         '"' + v + '": "' + moduleId + '"' +
-                        //     '}});';
-                    }
+                    diff += moduleId.length - elem.value.length;
+                    content = strSplice(content, start, elem.raw.length, info.quote + moduleId + info.quote);
+                   
                 } else {
                     fis.log.warning('Can not find module `' + v + '`');
                 }
@@ -427,6 +467,71 @@ parser.parseJs = function(content, file, conf) {
     }
 
     return content + suffix;
+};
+
+// 避免嵌套 compile
+var hash = {};
+function compileFile( file ) {
+    var id = file.realpath;
+
+    if (hash[id]) {
+        return;
+    } else if (file.compiled) {
+        return;
+    }
+
+    hash[id] = true;
+    fis.compile(file);
+    delete hash[id];
+}
+
+function getKeyByValue(obj, val) {
+    var keys = Object.keys(obj);
+    var len = keys.length;
+    var i = 0;
+    var key;
+
+    if (!val) {
+        return null;
+    }
+
+    for (; i < len; i++) {
+        key = keys[i];
+        if (obj[key] === val) {
+            return key;
+        }
+    }
+
+    return null;
+}
+
+function getModuleId(ref, file, conf) {
+    var key;
+
+    // 
+    if (ref) {
+        if (ref[0] !== '.' && ref[0] !== '/' && map[ref]) {
+            return ref;
+        } else if ((key = getKeyByValue(map, file.subpath))) {
+            return key;
+        }
+    }
+
+    if (conf.moduleIdTpl) {
+        return conf.moduleIdTpl.replace(/\$\{([^\}]+)\}/g, function(all, $1){
+            var val = file[$1] || fis.config.get($1);
+
+            if (typeof val === 'undefined') {
+                fis.log.error('undefined property [' + $1 + '].');
+            } else {
+                return val;
+            }
+
+            return all;
+        });
+    } else {
+        return file.moduleId || file.id;
+    }
 };
 
 var getConverter = function(content) {
@@ -447,9 +552,9 @@ var getConverter = function(content) {
 };
 
 function wrapAMD(content, file, conf) {
-    var moduleId = file.moduleId || file.id;
+    var moduleId = getModuleId('', file, conf);
 
-    content = 'define(\'' + moduleId + '\', function() {\n' + content + '\n});';
+    content = 'define(\'' + moduleId + '\', function(require, exports, module) {\n' + content + '\n});';
 
     return content;
 }
