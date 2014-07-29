@@ -122,10 +122,19 @@ parser.parseHtml = function(content, file, conf) {
 
 // 插件默认配置项。
 parser.defaultOptions = {
+    // 是否把 amd define 定义模块依赖提前。
     forwardDeclaration: true,
+
+    // 是否生成依赖表。
     genAsyncDeps: true,
+
+    // 总开关，是否把全局环境下的 require([xxx], cb); 写法当成同步，提前加载依赖。
+    globalAsyncAsSync: true,
+    
+    // module id 模板
     moduleIdTpl: '${namespace}${subpathNoExt}',
 
+    // 用于定位模块文件用的.
     baseUrl: '.',
     paths: {},
     packages: []
@@ -427,7 +436,7 @@ parser.parseJs = function(content, file, conf) {
             // 因为在 define 外面，没有这样的用法： var lib = require('string');
             // 
             // 这块逻辑待商定！！！！！
-            var async = req.isInModule;
+            var async = !conf.globalAsyncAsSync || req.isInModule;
 
             (req.deps || []).forEach(function(elem) {
                 var v = elem.raw;
