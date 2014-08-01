@@ -174,11 +174,15 @@ function findPkg(pkg, list) {
 function resolveModuleId(id, dirname, conf) {
     var paths = conf.paths || {};
     var pkgs = conf.packages || [];
-    var baseUrl = conf.baseUrl || '';
+    var baseUrl = conf.baseUrl || '.';
     var root = fis.project.getProjectPath();
     var isAlias = false;
 
     var info, m, pkg, path, dirs, item, dir, i, len;
+
+    if (baseUrl[0] !== '/') {
+        baseUrl = pth.join(root, baseUrl);
+    }
 
     var idx = id.indexOf(':');
     var ns, subpath;
@@ -194,13 +198,15 @@ function resolveModuleId(id, dirname, conf) {
         info.file || (info = fis.uri(id + '.js', dirname));
     } else if (id[0] === '/') {
         
-        // 绝对路径。
+        // 绝对路径, 那也是相对与 baseUrl 的绝对路径。
         id = id.substring(1);
-        info = fis.uri(id, root);
-        info.file || (info = fis.uri(id + '.js', root));
+        info = fis.uri(id, baseUrl);
+        info.file || (info = fis.uri(id + '.js', baseUrl));
+
     } else if ((m = /^([^\/]+)(?:\/(.*))?$/.exec(id))) {
+        path = m[0];
         pkg = m[1];
-        path = m[2] || '';
+        subpath = m[2] || '';
 
         // 先查找 conf.paths
         if (paths[pkg]) {
@@ -211,37 +217,42 @@ function resolveModuleId(id, dirname, conf) {
             for (i = 0, len = dirs.length; i < len; i++) {
                 dir = dirs[i];
 
+                info = fis.uri(dir, baseUrl);
+                info.file || (info = fis.uri(dir + '.js', baseUrl));
+
+                if (info.file || !subpath) {
+                    break;
+                }
+
+                // 没找到，我再来当文件夹处理
+
                 if (dir[0] !== '/') {
                     dir = pth.join(baseUrl, dir);
                 }
 
-                if (path) {
-                    info = fis.uri(path, dir);
-                    info.file || (info = fis.uri(path + '.js', dir));
-                } else {
-                    info = fis.uri(dir, root);
+                info = fis.uri(subpath, dir);
+                info.file || (info = fis.uri(subpath + '.js', dir));
+
+                // 如果找到了需要断开。
+                if (info.file) {
+                    break;
                 }
             }
 
         // 再查找 conf.packages
         } else if ((item = findPkg(pkg, pkgs))) {
             dir = baseUrl;
-            if (dir[0] !== '/') {
-                dir = pth.join(root, dir);
-            }
-
             dir = pth.join(dir, item.location || item.name);
-            path = path || item.main || 'main';
-            info = fis.uri(path, dir);            
-            info.file || (info = fis.uri(path + '.js', dir));
+            subpath = subpath || item.main || 'main';
+            info = fis.uri(subpath, dir);            
+            info.file || (info = fis.uri(subpath + '.js', dir));
+        } else {
+            info = fis.uri(path, baseUrl);            
+            info.file || (info = fis.uri(path + '.js', baseUrl));
         }
-
-        // 标记，是通过 pkg 或者 paths 查找到文件的。
-        isAlias = true;
     }
 
     return {
-        isAlias: info && info.file && isAlias,
         file: info && info.file
     }
 }
