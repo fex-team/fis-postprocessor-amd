@@ -94,7 +94,7 @@ var Fis = (function() {
 
             child = spawn('istanbul', args);
             // child.stdout.pipe(process.stdout);
-            child.stderr.pipe(process.stderr);
+            // child.stderr.pipe(process.stderr);
             child.on('exit', function() {
                 cb && cb();
             });
@@ -162,6 +162,48 @@ describe('Tests', function() {
     it('custom module id', function(done) {
         Fis.run('-r', resolve('tests/custom_module_id/source'), '-f', resolve('tests/custom_module_id/fis-conf.js'), function() {
             compareFolder(resolve('tests/custom_module_id/expected'), resolve('output'), function(name, src, dst) {
+                if (typeof src === 'undefined') {
+                    assert.ok(false, name + ' file not match');
+                } else {
+                    assert.ok(src === dst, name + ' content not match');
+                }
+            });
+
+            done();
+        });
+    });
+
+    it('packager', function(done) {
+        Fis.run('-r', resolve('tests/amd_packager/source'), '-f', resolve('tests/amd_packager/fis-conf.js'), function() {
+            compareFolder(resolve('tests/amd_packager/expected'), resolve('output'), function(name, src, dst) {
+                if (typeof src === 'undefined') {
+                    assert.ok(false, name + ' file not match');
+                } else {
+                    assert.ok(src === dst, name + ' content not match');
+                }
+            });
+
+            done();
+        });
+    });
+
+    it('packager with defined module id', function(done) {
+        Fis.run('-r', resolve('tests/amd_packager_2/source'), '-f', resolve('tests/amd_packager_2/fis-conf.js'), function() {
+            compareFolder(resolve('tests/amd_packager_2/expected'), resolve('output'), function(name, src, dst) {
+                if (typeof src === 'undefined') {
+                    assert.ok(false, name + ' file not match');
+                } else {
+                    assert.ok(src === dst, name + ' content not match');
+                }
+            });
+
+            done();
+        });
+    });
+
+    it('complex with namespace', function(done) {
+        Fis.run('-r', resolve('tests/ns_complex/source'), '-f', resolve('tests/ns_complex/fis-conf.js'), function() {
+            compareFolder(resolve('tests/ns_complex/expected'), resolve('output'), function(name, src, dst) {
                 if (typeof src === 'undefined') {
                     assert.ok(false, name + ' file not match');
                 } else {

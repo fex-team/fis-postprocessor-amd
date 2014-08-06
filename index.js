@@ -359,8 +359,8 @@ parser.parseHtml = function(content, file, conf) {
 
 parser.parseJs = function(content, file, conf) {
     var modules = lib.getAMDModules(content);
-    var suffix = '';
-    var diff, converter, requires;
+    var inserts = [];
+    var converter, requires;
 
     // 没找到 amd 定义, 则需要包装
     if (!modules.length && !file.isHtmlLike && (file.isMod || conf.wrapAll)) {
@@ -369,10 +369,9 @@ parser.parseJs = function(content, file, conf) {
     }
 
     converter = getConverter(content);
-    diff = 0;
 
     file._anonymousDefineCount = file._anonymousDefineCount || 0;
-    
+
     // 编译所有模块定义列表
     modules.forEach(function(module) {
         var argsRaw = [];   // factory 处理前的形参列表。
@@ -441,9 +440,12 @@ parser.parseJs = function(content, file, conf) {
                     moduleId = getModuleId(v, target.file, conf );
                     file.extras.paths[moduleId] = target.file.id;
 
-                    start = converter(elem.loc.start.line, elem.loc.start.column) + diff;
-                    diff += moduleId.length - elem.value.length;
-                    content = strSplice(content, start, elem.raw.length, info.quote + moduleId + info.quote);
+                    start = converter(elem.loc.start.line, elem.loc.start.column);
+                    inserts.push({
+                        start: start,
+                        len: elem.raw.length,
+                        content: info.quote + moduleId + info.quote
+                    });
 
                     // 非依赖前置
                     if (!conf.forwardDeclaration) {
@@ -499,7 +501,11 @@ parser.parseJs = function(content, file, conf) {
                 end = start;
             }
 
-            content = strSplice(content, start, end - start, args.join(', '));
+            inserts.push({
+                start: start,
+                len: end - start,
+                content: args.join(', ')
+            });
         }
 
         // 替换 deps
@@ -507,7 +513,15 @@ parser.parseJs = function(content, file, conf) {
             start = converter(module.depsLoc.start.line, module.depsLoc.start.column);
             end = converter(module.depsLoc.end.line, module.depsLoc.end.column);
 
-            content = strSplice(content, start, end - start, '[' + deps.join(', ') + ']' + (module.deps ? '' : ','))
+            deps = deps.filter(function(elem, pos, thearr) {
+                return args[pos] || thearr.indexOf(elem) === pos;
+            });
+
+            inserts.push({
+                start: start,
+                len: end - start,
+                content: '[' + deps.join(', ') + ']' + (module.deps ? '' : ',')
+            });
         }
 
         // 添加 module id
@@ -523,7 +537,12 @@ parser.parseJs = function(content, file, conf) {
             start = module.node.loc.start;
             start = converter(start.line, start.column);
             start += /^define\s*\(/.exec(content.substring(start))[0].length;
-            content = strSplice(content, start, 0, '\''+moduleId+'\', ');
+
+            inserts.push({
+                start: start,
+                len: 0,
+                content: '\''+moduleId+'\', '
+            });
             file._anonymousDefineCount++;
         } else {
             // 自动填充 conf.paths 表。
@@ -531,8 +550,14 @@ parser.parseJs = function(content, file, conf) {
         }
     });
 
-    // console.log(content);
-
+    inserts = inserts
+        .sort(function(a, b) {
+            return b.start - a.start;
+        })
+        .filter(function(item) {
+            content = strSplice(content, item.start, item.len, item.content);
+            return false;
+        });
 
     // 获取文件中异步 require
     // require([xxx], callback);
@@ -541,7 +566,6 @@ parser.parseJs = function(content, file, conf) {
     if (requires.length) {
         converter = getConverter(content);
 
-        diff = 0;
         requires.forEach(function(req) {
 
             // 只有在模块中的异步才被认为是异步？
@@ -574,12 +598,15 @@ parser.parseJs = function(content, file, conf) {
                         file.extras.paths[moduleId] = target.file.id;
                         file.addRequire(target.file.id);
                     }
-                    
-                    start = elem.loc.start;
-                    start = converter(start.line, start.column) + diff;
 
-                    diff += moduleId.length - elem.value.length;
-                    content = strSplice(content, start, elem.raw.length, info.quote + moduleId + info.quote);
+                    start = elem.loc.start;
+                    start = converter(start.line, start.column);
+
+                    inserts.push({
+                        start: start,
+                        len: elem.raw.length,
+                        content: info.quote + moduleId + info.quote
+                    });
                    
                 } else {
                     fis.log.warning('Can not find module `' + v + '`');
@@ -587,7 +614,16 @@ parser.parseJs = function(content, file, conf) {
             });
 
         });
+
+        inserts = inserts
+            .sort(function(a, b) {
+                return b.start - a.start;
+            })
+            .filter(function(item) {
+                content = strSplice(content, item.start, item.len, item.content);
+                return false;
+            });
     }
 
-    return content + suffix;
+    return content;
 };

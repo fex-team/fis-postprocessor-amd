@@ -1,0 +1,107 @@
+{
+    "res": {
+        "ns:app.js": {
+            "uri": "/app.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "modHH": "ns:mods/modH.js",
+                    "modIIIIIII": "ns:mods/modI.js",
+                    "ns/util/index": "ns:util/index.js",
+                    "ns/util/each": "ns:util/each.js"
+                }
+            },
+            "deps": [
+                "ns:mods/modH.js",
+                "ns:mods/modI.js",
+                "ns:util/index.js",
+                "ns:util/each.js"
+            ]
+        },
+        "ns:mods/modA.js": {
+            "uri": "/mods/modA.js",
+            "type": "js"
+        },
+        "ns:mods/modB.js": {
+            "uri": "/mods/modB.js",
+            "type": "js"
+        },
+        "ns:mods/modC.js": {
+            "uri": "/mods/modC.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "ns/mods/modA": "ns:mods/modA.js",
+                    "ns/mods/modB": "ns:mods/modB.js"
+                }
+            },
+            "deps": [
+                "ns:mods/modA.js",
+                "ns:mods/modB.js"
+            ]
+        },
+        "ns:mods/modD.js": {
+            "uri": "/mods/modD.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "ns/mods/modA": "ns:mods/modA.js",
+                    "ns/mods/modB": "ns:mods/modB.js"
+                }
+            },
+            "deps": [
+                "ns:mods/modA.js",
+                "ns:mods/modB.js"
+            ]
+        },
+        "ns:mods/modE.js": {
+            "uri": "/mods/modE.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "ns/mods/modA": "ns:mods/modA.js",
+                    "ns/mods/modB": "ns:mods/modB.js"
+                }
+            },
+            "deps": [
+                "ns:mods/modA.js",
+                "ns:mods/modB.js"
+            ]
+        },
+        "ns:mods/modF.js": {
+            "uri": "/mods/modF.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "ns/mods/modA": "ns:mods/modA.js",
+                    "ns/mods/modB": "ns:mods/modB.js"
+                }
+            },
+            "deps": [
+                "ns:mods/modA.js",
+                "ns:mods/modB.js"
+            ]
+        },
+        "ns:mods/modG.js": {
+            "uri": "/mods/modG.js",
+            "type": "js"
+        },
+        "ns:mods/modH.js": {
+            "uri": "/mods/modH.js",
+            "type": "js"
+        },
+        "ns:mods/modI.js": {
+            "uri": "/mods/modI.js",
+            "type": "js"
+        },
+        "ns:util/each.js": {
+            "uri": "/util/each.js",
+            "type": "js"
+        },
+        "ns:util/index.js": {
+            "uri": "/util/index.js",
+            "type": "js"
+        }
+    },
+    "pkg": {}
+}

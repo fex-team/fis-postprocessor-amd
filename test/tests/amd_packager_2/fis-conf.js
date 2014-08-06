@@ -8,9 +8,13 @@ fis.config.set('modules.postprocessor.js', postprocessor);
 fis.config.set('settings.postprocessor', [{
     // 用于定位模块文件用的.
     baseUrl: '.',
-    paths: {
-        'modA': './modA.js'
-    },
-    packages: [],
+    paths: {},
+    packages: [
+        {
+            name: 'util',
+            location: 'util',
+            main: 'index'
+        }
+    ],
     wrapAll: true
 }]);

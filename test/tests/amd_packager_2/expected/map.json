@@ -1,0 +1,27 @@
+{
+    "res": {
+        "app.js": {
+            "uri": "/app.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "util": "util/index.js",
+                    "util/each": "util/each.js"
+                }
+            },
+            "deps": [
+                "util/index.js",
+                "util/each.js"
+            ]
+        },
+        "util/each.js": {
+            "uri": "/util/each.js",
+            "type": "js"
+        },
+        "util/index.js": {
+            "uri": "/util/index.js",
+            "type": "js"
+        }
+    },
+    "pkg": {}
+}

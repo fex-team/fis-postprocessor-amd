@@ -15,6 +15,18 @@
             "deps": [
                 "modA.js"
             ]
+        },
+        "modC.js": {
+            "uri": "/modC.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "modA": "modA.js"
+                }
+            },
+            "deps": [
+                "modA.js"
+            ]
         }
     },
     "pkg": {}
