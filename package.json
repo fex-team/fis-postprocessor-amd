@@ -4,7 +4,9 @@
   "description": "fis-postprocessor-amd ===========================",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha --reporter dot --check-leaks test/",
+    "test-cov": "env istanbul=1 mocha --reporter dot --check-leaks test/",
+    "test-travis": "env istanbul=1 istanbul_report=lcovonly mocha --reporter spec --check-leaks test/"
   },
   "repository": {
     "type": "git",
@@ -20,5 +22,11 @@
     "escope": "~1.0.1",
     "esprima": "~1.2.2",
     "estraverse": "~1.5.1"
+  },
+  "devDependencies": {
+    "mocha": "~1.21.3",
+    "istanbul": "~0.3.0",
+    "should": "~4.0.4",
+    "fis": "~1.7.14"
   }
 }

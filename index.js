@@ -21,6 +21,7 @@ function pregQuote (str, delimiter) {
     return (str + '').replace(new RegExp('[.\\\\+*?\\[\\^\\]$(){}=!<>|:\\' + (delimiter || '') + '-]', 'g'), '\\$&');
 }
 
+// 在第一次使用的时候初始化
 var inited = false;
 function init(conf) {
 
@@ -103,23 +104,6 @@ var parser = module.exports = function(content, file, conf) {
     return content;
 };
 
-// 只需把 html 中的 script 找出来，然后执行  parserJs。
-parser.parseHtml = function(content, file, conf) {
-    parser.scriptsReg.forEach(function(reg) {
-        content = content.replace(reg, function(m, $1, $2) {
-            
-            // in <script> tag
-            if ($1) {
-                m = $1 + parser.parseJs($2, file, conf);
-            }
-
-            return m;
-        });
-    });
-
-    return content;
-};
-
 // 插件默认配置项。
 parser.defaultOptions = {
     // 是否把 amd define 定义模块依赖提前。
@@ -150,6 +134,105 @@ function strSplice(str, index, count, add) {
     return str.slice(0, index) + add + str.slice(index + count);
 }
 
+// 避免嵌套重复 compile
+var hash = {};
+function compileFile( file ) {
+    var id = file.realpath;
+
+    if (hash[id]) {
+        return;
+    } else if (file.compiled) {
+        return;
+    }
+
+    hash[id] = true;
+    fis.compile(file);
+    delete hash[id];
+}
+
+function getKeyByValue(obj, val) {
+    var keys = Object.keys(obj);
+    var len = keys.length;
+    var i = 0;
+    var key;
+
+    if (!val) {
+        return null;
+    }
+
+    for (; i < len; i++) {
+        key = keys[i];
+        if (obj[key] === val) {
+            return key;
+        }
+    }
+
+    return null;
+}
+
+function getModuleId(ref, file, conf) {
+    var key;
+
+    // ref 为用户指定的 module id 原始值
+    if (ref) {
+        if (ref[0] !== '.' && ref[0] !== '/' && map[ref]) {
+            // 如果为非绝对路径且不会相对路径，则看看这个 module id 是否已经定义过。
+            // 如果定义过，则保留不变。
+            return ref;
+        } else if ((key = getKeyByValue(map, file.subpath))) {
+            // ref 为其他情况下，看这个文件是否有自定义的 module id, 有则用自定义的。
+            return key;
+        }
+    }
+
+    // 根据模板生成 module id.
+    if (conf.moduleIdTpl) {
+        return conf.moduleIdTpl.replace(/\$\{([^\}]+)\}/g, function(all, $1){
+            var val = file[$1] || fis.config.get($1);
+
+            return val || '';
+        });
+    } else {
+        return file.moduleId || file.id;
+    }
+};
+
+// 生成转换坐标为位置的函数。
+function getConverter(content) {
+    var rbr = /\r\n|\r|\n/mg;
+    var steps = [0], m;
+
+    while((m = rbr.exec(content))) {
+        steps.push(m.index + m[0].length);
+    }
+
+    return function(line, column) {
+        if (steps.length < line) {
+            return -1;
+        }
+
+        return steps[line-1] + column;
+    };
+};
+
+// 包装成 amd 格式。
+function wrapAMD(content, file, conf) {
+    var moduleId = getModuleId('', file, conf);
+
+    content = 'define(\'' + moduleId + '\', function(require, exports, module) {\n' + content + '\n});';
+
+    return content;
+}
+
+function isEmptyObject(obj) {
+
+    for (var key in obj) {
+        return false;
+    }
+
+    return true;
+}
+
 function findPkg(pkg, list) {
     var i = 0;
     var len = list.length;
@@ -176,7 +259,7 @@ function resolveModuleId(id, dirname, conf) {
     var pkgs = conf.packages || [];
     var baseUrl = conf.baseUrl || '.';
     var root = fis.project.getProjectPath();
-    var isAlias = false;
+    var connector = fis.config.get('namespaceConnector', ':');
 
     var info, m, pkg, path, dirs, item, dir, i, len;
 
@@ -184,7 +267,7 @@ function resolveModuleId(id, dirname, conf) {
         baseUrl = pth.join(root, baseUrl);
     }
 
-    var idx = id.indexOf(':');
+    var idx = id.indexOf(connector);
     var ns, subpath;
     if (~idx && (ns = id.substring(0, idx)) && ns == fis.config.get('namespace')) {
         subpath = id.substring(idx + 1);
@@ -224,7 +307,7 @@ function resolveModuleId(id, dirname, conf) {
                     break;
                 }
 
-                // 没找到，我再来当文件夹处理
+                // 没找到，再来当文件夹处理
 
                 if (dir[0] !== '/') {
                     dir = pth.join(baseUrl, dir);
@@ -257,6 +340,22 @@ function resolveModuleId(id, dirname, conf) {
     }
 }
 
+// 只需把 html 中的 script 找出来，然后执行  parserJs。
+parser.parseHtml = function(content, file, conf) {
+    parser.scriptsReg.forEach(function(reg) {
+        content = content.replace(reg, function(m, $1, $2) {
+            
+            // in <script> tag
+            if ($1) {
+                m = $1 + parser.parseJs($2, file, conf);
+            }
+
+            return m;
+        });
+    });
+
+    return content;
+};
 
 parser.parseJs = function(content, file, conf) {
     var modules = lib.getAMDModules(content);
@@ -276,11 +375,12 @@ parser.parseJs = function(content, file, conf) {
     
     // 编译所有模块定义列表
     modules.forEach(function(module) {
-        var argsRaw = [];
-        var deps = [];
-        var args = [];
+        var argsRaw = [];   // factory 处理前的形参列表。
+        var deps = [];  // 最终依赖列表
+        var args = [];  // 最终 factory 的形参列表
         var moduleId, start, end, params;
         
+        // 获取处理前的原始形参
         params = module.factory.params;
         params && params.forEach(function(param) {
             argsRaw.push(param.name);
@@ -446,8 +546,10 @@ parser.parseJs = function(content, file, conf) {
 
             // 只有在模块中的异步才被认为是异步？
             // 因为在 define 外面，没有这样的用法： var lib = require('string');
+            // 所以不存在同步用法，也就无法把同步依赖提前加载进来。
+            // 为了实现提前加载依赖来提高性能，我们把global下的异步依赖认为是同步的。
             // 
-            // 这块逻辑待商定！！！！！
+            // 当然这里有个总开关，可以通过设置 `globalAsyncAsSync` 为 false 来关闭此功能。
             var async = !conf.globalAsyncAsSync || req.isInModule;
 
             (req.deps || []).forEach(function(elem) {
@@ -489,102 +591,3 @@ parser.parseJs = function(content, file, conf) {
 
     return content + suffix;
 };
-
-// 避免嵌套 compile
-var hash = {};
-function compileFile( file ) {
-    var id = file.realpath;
-
-    if (hash[id]) {
-        return;
-    } else if (file.compiled) {
-        return;
-    }
-
-    hash[id] = true;
-    fis.compile(file);
-    delete hash[id];
-}
-
-function getKeyByValue(obj, val) {
-    var keys = Object.keys(obj);
-    var len = keys.length;
-    var i = 0;
-    var key;
-
-    if (!val) {
-        return null;
-    }
-
-    for (; i < len; i++) {
-        key = keys[i];
-        if (obj[key] === val) {
-            return key;
-        }
-    }
-
-    return null;
-}
-
-function getModuleId(ref, file, conf) {
-    var key;
-
-    // 
-    if (ref) {
-        if (ref[0] !== '.' && ref[0] !== '/' && map[ref]) {
-            return ref;
-        } else if ((key = getKeyByValue(map, file.subpath))) {
-            return key;
-        }
-    }
-
-    if (conf.moduleIdTpl) {
-        return conf.moduleIdTpl.replace(/\$\{([^\}]+)\}/g, function(all, $1){
-            var val = file[$1] || fis.config.get($1);
-
-            if (typeof val === 'undefined') {
-                fis.log.error('undefined property [' + $1 + '].');
-            } else {
-                return val;
-            }
-
-            return all;
-        });
-    } else {
-        return file.moduleId || file.id;
-    }
-};
-
-var getConverter = function(content) {
-    var rbr = /\r\n|\r|\n/mg;
-    var steps = [0], m;
-
-    while((m = rbr.exec(content))) {
-        steps.push(m.index + m[0].length);
-    }
-
-    return function(line, column) {
-        if (steps.length < line) {
-            return -1;
-        }
-
-        return steps[line-1] + column;
-    };
-};
-
-function wrapAMD(content, file, conf) {
-    var moduleId = getModuleId('', file, conf);
-
-    content = 'define(\'' + moduleId + '\', function(require, exports, module) {\n' + content + '\n});';
-
-    return content;
-}
-
-function isEmptyObject(obj) {
-
-    for (var key in obj) {
-        return false;
-    }
-
-    return true;
-}

@@ -1,0 +1,21 @@
+{
+    "res": {
+        "modA.js": {
+            "uri": "/modA.js",
+            "type": "js"
+        },
+        "modB.js": {
+            "uri": "/modB.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "modA": "modA.js"
+                }
+            },
+            "deps": [
+                "modA.js"
+            ]
+        }
+    },
+    "pkg": {}
+}
