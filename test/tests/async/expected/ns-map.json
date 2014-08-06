@@ -1,0 +1,55 @@
+{
+    "res": {
+        "ns:modA.js": {
+            "uri": "/modA.js",
+            "type": "js"
+        },
+        "ns:modB.js": {
+            "uri": "/modB.js",
+            "type": "js"
+        },
+        "ns:modC.js": {
+            "uri": "/modC.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "ns/modA": "ns:modA.js",
+                    "ns/modB": "ns:modB.js"
+                }
+            },
+            "deps": [
+                "ns:modA.js",
+                "ns:modB.js"
+            ]
+        },
+        "ns:modD.js": {
+            "uri": "/modD.js",
+            "type": "js",
+            "extras": {
+                "async": [
+                    "ns:modA.js",
+                    "ns:modB.js"
+                ],
+                "asyncPaths": {
+                    "ns/modA": "ns:modA.js",
+                    "ns/modB": "ns:modB.js"
+                }
+            }
+        },
+        "ns:modE.js": {
+            "uri": "/modE.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "ns/modA": "ns:modA.js",
+                    "ns/modB": "ns:modB.js"
+                }
+            },
+            "deps": [
+                "ns:modA.js",
+                "ns:modB.js"
+            ]
+        }
+    },
+    "pkg": {}
+}

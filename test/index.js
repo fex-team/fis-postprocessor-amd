@@ -72,9 +72,11 @@ var Fis = (function() {
             var args = ['report', process.env.istanbul_report || 'html'];
             var child;
 
-            reportDirs.forEach(function(val) {
-                args.splice(1, 0, '--root', val);
-            });
+            // reportDirs.forEach(function(val) {
+            //     args.splice(1, 0, '--root', val);
+            // });
+
+            args.splice(1, 0, '--root', 'coverage');
 
             Object.keys(process.env).forEach(function(key) {
                 var m = /^istanbul_(.*)$/.exec(key);
@@ -204,6 +206,76 @@ describe('Tests', function() {
     it('complex with namespace', function(done) {
         Fis.run('-r', resolve('tests/ns_complex/source'), '-f', resolve('tests/ns_complex/fis-conf.js'), function() {
             compareFolder(resolve('tests/ns_complex/expected'), resolve('output'), function(name, src, dst) {
+                if (typeof src === 'undefined') {
+                    assert.ok(false, name + ' file not match');
+                } else {
+                    assert.ok(src === dst, name + ' content not match');
+                }
+            });
+
+            done();
+        });
+    });
+
+    it('async', function(done) {
+        Fis.run('-r', resolve('tests/async/source'), '-f', resolve('tests/async/fis-conf.js'), function() {
+            compareFolder(resolve('tests/async/expected'), resolve('output'), function(name, src, dst) {
+                if (typeof src === 'undefined') {
+                    assert.ok(false, name + ' file not match');
+                } else {
+                    assert.ok(src === dst, name + ' content not match');
+                }
+            });
+
+            done();
+        });
+    });
+
+    it('async width specify module id', function(done) {
+        Fis.run('-r', resolve('tests/async_width_name/source'), '-f', resolve('tests/async_width_name/fis-conf.js'), function() {
+            compareFolder(resolve('tests/async_width_name/expected'), resolve('output'), function(name, src, dst) {
+                if (typeof src === 'undefined') {
+                    assert.ok(false, name + ' file not match');
+                } else {
+                    assert.ok(src === dst, name + ' content not match');
+                }
+            });
+
+            done();
+        });
+    });
+
+    it('internal amd', function(done) {
+        Fis.run('-r', resolve('tests/internal_amd/source'), '-f', resolve('tests/internal_amd/fis-conf.js'), function() {
+            compareFolder(resolve('tests/internal_amd/expected'), resolve('output'), function(name, src, dst) {
+                if (typeof src === 'undefined') {
+                    assert.ok(false, name + ' file not match');
+                } else {
+                    assert.ok(src === dst, name + ' content not match');
+                }
+            });
+
+            done();
+        });
+    });
+
+    it('pack', function(done) {
+        Fis.run('-r', resolve('tests/pack_amd/source'), '-f', resolve('tests/pack_amd/fis-conf.js'), '-p', function() {
+            compareFolder(resolve('tests/pack_amd/expected'), resolve('output'), function(name, src, dst) {
+                if (typeof src === 'undefined') {
+                    assert.ok(false, name + ' file not match');
+                } else {
+                    assert.ok(src === dst, name + ' content not match');
+                }
+            });
+
+            done();
+        });
+    });
+
+    it('pack', function(done) {
+        Fis.run('-r', resolve('tests/md5_amd/source'), '-f', resolve('tests/md5_amd/fis-conf.js'), '-mp', function() {
+            compareFolder(resolve('tests/md5_amd/expected'), resolve('output'), function(name, src, dst) {
                 if (typeof src === 'undefined') {
                     assert.ok(false, name + ' file not match');
                 } else {

@@ -340,6 +340,24 @@ function resolveModuleId(id, dirname, conf) {
     }
 }
 
+function bulkReplace(content, arr) {
+    arr
+        .sort(function(a, b) {
+            var diff = b.start - a.start;
+
+            if (!diff) {
+                return b.len - a.len;
+            }
+
+            return diff;
+        })
+        .forEach(function(item) {
+            content = strSplice(content, item.start, item.len, item.content);
+        });
+
+    return content;
+}
+
 // 只需把 html 中的 script 找出来，然后执行  parserJs。
 parser.parseHtml = function(content, file, conf) {
     parser.scriptsReg.forEach(function(reg) {
@@ -363,7 +381,7 @@ parser.parseJs = function(content, file, conf) {
     var converter, requires;
 
     // 没找到 amd 定义, 则需要包装
-    if (!modules.length && !file.isHtmlLike && (file.isMod || conf.wrapAll)) {
+    if (!modules.length && !file.isHtmlLike && (typeof file.useAMDWrap === 'undefined' ? (file.isMod || conf.wrapAll) : file.useAMDWrap)) {
         content = wrapAMD(content, file, conf);
         modules = lib.getAMDModules(content);
     }
@@ -550,14 +568,8 @@ parser.parseJs = function(content, file, conf) {
         }
     });
 
-    inserts = inserts
-        .sort(function(a, b) {
-            return b.start - a.start;
-        })
-        .filter(function(item) {
-            content = strSplice(content, item.start, item.len, item.content);
-            return false;
-        });
+    content = bulkReplace(content, inserts);
+    inserts = [];
 
     // 获取文件中异步 require
     // require([xxx], callback);
@@ -602,6 +614,8 @@ parser.parseJs = function(content, file, conf) {
                     start = elem.loc.start;
                     start = converter(start.line, start.column);
 
+                    console.log(file.subpath, elem.raw, moduleId);
+
                     inserts.push({
                         start: start,
                         len: elem.raw.length,
@@ -615,14 +629,7 @@ parser.parseJs = function(content, file, conf) {
 
         });
 
-        inserts = inserts
-            .sort(function(a, b) {
-                return b.start - a.start;
-            })
-            .filter(function(item) {
-                content = strSplice(content, item.start, item.len, item.content);
-                return false;
-            });
+        content = bulkReplace(content, inserts);
     }
 
     return content;
