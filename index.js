@@ -71,10 +71,25 @@ function init(conf) {
         require('./lib/fis-prepackager-async-deps.js');
     }
 
+    conf.packages = conf.packages.map(function(item) {
+
+        if (typeof item === 'string') {
+            item = {
+                name: item
+            }
+        }
+
+        return item;
+    });
+
     inited = true;
 }
 
 var parser = module.exports = function(content, file, conf) {
+
+    if (file.useAMD === false) {
+        return content;
+    }
     
     init(conf);
 
@@ -254,21 +269,29 @@ function findPkg(pkg, list) {
 //  paths
 //  baseUrl
 //  packages 
-function resolveModuleId(id, dirname, conf) {
+function resolveModuleId(id, file, conf) {
     var paths = conf.paths || {};
     var pkgs = conf.packages || [];
     var baseUrl = conf.baseUrl || '.';
     var root = fis.project.getProjectPath();
     var connector = fis.config.get('namespaceConnector', ':');
+    var dirname = file.dirname;
+    var pluginPath, info, m, pkg, path, dirs, item;
+    var dir, lastdir, i, len, ns, subpath, idx, sibling;
 
-    var info, m, pkg, path, dirs, item, dir, i, len;
+    idx = id.indexOf('!');
+    if (~idx) {
+        pluginPath = id.substring(idx + 1);
+        id = id.substring(0, idx);
+    }
 
     if (baseUrl[0] !== '/') {
         baseUrl = pth.join(root, baseUrl);
     }
 
-    var idx = id.indexOf(connector);
-    var ns, subpath;
+    baseUrl = pth.resolve(baseUrl);
+
+    idx = id.indexOf(connector);
     if (~idx && (ns = id.substring(0, idx)) && ns == fis.config.get('namespace')) {
         subpath = id.substring(idx + 1);
 
@@ -279,6 +302,16 @@ function resolveModuleId(id, dirname, conf) {
         // 相对路径
         info = fis.uri(id, dirname);
         info.file || (info = fis.uri(id + '.js', dirname));
+
+        // combine 模式
+        if (!info.file && (sibling = getKeyByValue(map, file.subpath))) {
+            id = pth.join(sibling.replace(/(\/|\\)[^\/\\]+$/, ''), id);
+            
+            if (id && map[id]) {
+                info = fis.uri(map[id], root);
+            }
+        }
+
     } else if (id[0] === '/') {
         
         // 绝对路径, 那也是相对与 baseUrl 的绝对路径。
@@ -291,8 +324,11 @@ function resolveModuleId(id, dirname, conf) {
         pkg = m[1];
         subpath = m[2] || '';
 
-        // 先查找 conf.paths
-        if (paths[pkg]) {
+        // 先查找 map 中是否已经注册
+        if (map[path]) {
+            info = fis.uri(map[path], root);
+        } else if (paths[pkg]) {
+            // 再查找 conf.paths
             dirs = paths[pkg];
 
             Array.isArray(dirs) || (dirs = [dirs]);
@@ -330,8 +366,24 @@ function resolveModuleId(id, dirname, conf) {
             info = fis.uri(subpath, dir);            
             info.file || (info = fis.uri(subpath + '.js', dir));
         } else {
-            info = fis.uri(path, baseUrl);            
-            info.file || (info = fis.uri(path + '.js', baseUrl));
+
+            var top = pth.dirname(baseUrl);
+            // 递归查找。
+            for (dir = dirname; true;) {
+                info = fis.uri(path, dir);
+                info.file || (info = fis.uri(path + '.js', dir));
+
+                if (info.file) {
+                    break;
+                }
+
+                lastdir = dir;
+                dir = pth.dirname(dir);
+
+                if (dir === top || dir === lastdir) {
+                    break;
+                }
+            }
         }
     }
 
@@ -410,7 +462,7 @@ parser.parseJs = function(content, file, conf) {
             module.deps.forEach(function(elem) {
                 var v = elem.raw;
                 var info = fis.util.stringQuote(v);
-                var target, moduleId;
+                var target, moduleId, argname;
 
                 v = elem.value;
 
@@ -421,7 +473,7 @@ parser.parseJs = function(content, file, conf) {
                     return;
                 }
 
-                target = resolveModuleId(v, file.dirname, conf);
+                target = resolveModuleId(v, file, conf);
 
                 if (target && target.file) {
                     file.addRequire(target.file.id);
@@ -431,9 +483,15 @@ parser.parseJs = function(content, file, conf) {
                     file.extras.paths[moduleId] = target.file.id;
 
                     deps.push(info.quote + moduleId + info.quote);
-                    args.push(argsRaw.shift());
+                    argname = argsRaw.shift();
+                    argname && args.push(argname);
                 } else {
-                    fis.log.warning('Can not find module `' + v + '`');
+
+                    deps.push(elem.raw);
+                    argname = argsRaw.shift();
+                    argname && args.push(argname);
+
+                    fis.log.warning('Can not find module `' + v + '` in [' + file.subpath + ']');
                 }
             });
         } else {
@@ -449,7 +507,7 @@ parser.parseJs = function(content, file, conf) {
                 var info = fis.util.stringQuote(elem.raw);
                 var target, moduleId, val, start, end;
 
-                target = resolveModuleId(v, file.dirname, conf);
+                target = resolveModuleId(v, file, conf);
 
                 if (target && target.file) {
                     file.removeRequire(v);
@@ -470,7 +528,7 @@ parser.parseJs = function(content, file, conf) {
                         return;
                     }
                 } else {
-                    fis.log.warning('Can not find module `' + v + '`');
+                    fis.log.warning('Can not find module `' + v + '` in [' + file.subpath + ']');
                 }
 
                 deps.push(info.quote + moduleId + info.quote);
@@ -505,7 +563,6 @@ parser.parseJs = function(content, file, conf) {
                 }
             }
         }
-        
 
         // 替换 factory args.
         if (args.length) {
@@ -563,7 +620,7 @@ parser.parseJs = function(content, file, conf) {
             });
             file._anonymousDefineCount++;
         } else {
-            // 自动填充 conf.paths 表。
+            // console.log('module [', module.id, '] defined');
             map[module.id] = map[module.id] || file.subpath;
         }
     });
@@ -573,7 +630,12 @@ parser.parseJs = function(content, file, conf) {
 
     // 获取文件中异步 require
     // require([xxx], callback);
-    requires = lib.getAsyncRequires(content);
+    // try {
+        requires = lib.getAsyncRequires(content);
+    // } catch (err) {
+    //     console.log(file.subpath, content);
+    // }
+    
 
     if (requires.length) {
         converter = getConverter(content);
@@ -594,7 +656,7 @@ parser.parseJs = function(content, file, conf) {
                 var target, start, moduleId;
 
                 v = info.rest.trim();
-                target = resolveModuleId(v, file.dirname, conf);
+                target = resolveModuleId(v, file, conf);
 
                 if (target && target.file) {
                     compileFile(target.file);
@@ -614,8 +676,6 @@ parser.parseJs = function(content, file, conf) {
                     start = elem.loc.start;
                     start = converter(start.line, start.column);
 
-                    console.log(file.subpath, elem.raw, moduleId);
-
                     inserts.push({
                         start: start,
                         len: elem.raw.length,
@@ -623,7 +683,7 @@ parser.parseJs = function(content, file, conf) {
                     });
                    
                 } else {
-                    fis.log.warning('Can not find module `' + v + '`');
+                    fis.log.warning('Can not find module `' + v + '` in [' + file.subpath + ']');
                 }
             });
 

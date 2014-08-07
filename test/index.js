@@ -288,13 +288,32 @@ describe('Tests', function() {
     });
 });
 
+describe('AMD TEST', function() {
+    this.timeout(15000);
+
+    it('amd test', function(done) {
+        Fis.run('-r', resolve('tests/amd_test/source'), '-f', resolve('tests/amd_test/fis-conf.js'), function() {
+            compareFolder(resolve('tests/amd_test/expected'), resolve('output'), function(name, src, dst) {
+                if (typeof src === 'undefined') {
+                    assert.ok(false, name + ' file not match');
+                } else {
+                    assert.ok(src === dst, name + ' content not match');
+                }
+            });
+
+            done();
+        });
+    });
+});
+
+
 
 
 
 // 收尾输出 coverage
 describe('finish', function() {
     it('ignore this', function(callback) {
-        removeFolder(resolve('output'));
+        // removeFolder(resolve('output'));
         Fis.finish(callback);
     });
 })
