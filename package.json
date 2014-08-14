@@ -1,6 +1,6 @@
 {
   "name": "fis-postprocessor-amd",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "fis-postprocessor-amd ===========================",
   "main": "index.js",
   "scripts": {
