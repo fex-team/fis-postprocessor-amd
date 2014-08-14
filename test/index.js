@@ -313,7 +313,7 @@ describe('AMD TEST', function() {
 // 收尾输出 coverage
 describe('finish', function() {
     it('ignore this', function(callback) {
-        // removeFolder(resolve('output'));
+        removeFolder(resolve('output'));
         Fis.finish(callback);
     });
 })
