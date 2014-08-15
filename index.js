@@ -185,7 +185,7 @@ function getKeyByValue(obj, val) {
     return null;
 }
 
-function getModuleId(ref, file, conf) {
+function getModuleId(ref, file, conf, modulename) {
     var key;
 
     // ref 为用户指定的 module id 原始值
@@ -194,6 +194,8 @@ function getModuleId(ref, file, conf) {
             // 如果为非绝对路径且不会相对路径，则看看这个 module id 是否已经定义过。
             // 如果定义过，则保留不变。
             return ref;
+        } else if (modulename && (key = pth.join(pth.dirname(modulename), ref)) && map[key]) {
+            return key;
         } else if ((key = getKeyByValue(map, file.subpath))) {
             // ref 为其他情况下，看这个文件是否有自定义的 module id, 有则用自定义的。
             return key;
@@ -302,8 +304,6 @@ function resolveModuleId(id, file, conf, modulename) {
         // 先相对与当前定义的模块定位。
         if (modulename) {
             resolved = pth.join(pth.dirname(modulename), id);
-
-            debugger;
 
             if (resolved && map[resolved]) {
                 info = fis.uri(map[resolved], root);
@@ -499,7 +499,7 @@ parser.parseJs = function(content, file, conf) {
                 if (target && target.file) {
                     file.addRequire(target.file.id);
                     compileFile(target.file);
-                    moduleId = getModuleId(v, target.file, conf );
+                    moduleId = getModuleId(v, target.file, conf, module.id);
 
                     file.extras.paths[moduleId] = target.file.id;
 
@@ -534,7 +534,7 @@ parser.parseJs = function(content, file, conf) {
                     file.removeRequire(v);
                     file.addRequire(target.file.id);
                     compileFile(target.file);
-                    moduleId = getModuleId(v, target.file, conf );
+                    moduleId = getModuleId(v, target.file, conf, module.id );
                     file.extras.paths[moduleId] = target.file.id;
 
                     start = converter(elem.loc.start.line, elem.loc.start.column);
@@ -678,7 +678,7 @@ parser.parseJs = function(content, file, conf) {
 
                 if (target && target.file) {
                     compileFile(target.file);
-                    moduleId = getModuleId(v, target.file, conf );
+                    moduleId = getModuleId(v, target.file, conf, elem.id);
 
                     if (async) {
                         if (!~file.extras.async.indexOf(target.file.id) && !~file.requires.indexOf(target.file.id)) {
