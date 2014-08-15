@@ -269,7 +269,7 @@ function findPkg(pkg, list) {
 //  paths
 //  baseUrl
 //  packages 
-function resolveModuleId(id, file, conf) {
+function resolveModuleId(id, file, conf, modulename) {
     var paths = conf.paths || {};
     var pkgs = conf.packages || [];
     var baseUrl = conf.baseUrl || '.';
@@ -277,7 +277,7 @@ function resolveModuleId(id, file, conf) {
     var connector = fis.config.get('namespaceConnector', ':');
     var dirname = file.dirname;
     var pluginPath, info, m, pkg, path, dirs, item;
-    var dir, lastdir, i, len, ns, subpath, idx, sibling;
+    var dir, lastdir, i, len, ns, subpath, idx, sibling, resolved;
 
     idx = id.indexOf('!');
     if (~idx) {
@@ -298,10 +298,23 @@ function resolveModuleId(id, file, conf) {
         info = fis.uri(subpath, root);
         info.file || (info = fis.uri(subpath + '.js', root));
     } else if (id[0] === '.') {
+
+        // 先相对与当前定义的模块定位。
+        if (modulename) {
+            resolved = pth.join(pth.dirname(modulename), id);
+
+            debugger;
+
+            if (resolved && map[resolved]) {
+                info = fis.uri(map[resolved], root);
+            }
+        }
         
-        // 相对路径
-        info = fis.uri(id, dirname);
-        info.file || (info = fis.uri(id + '.js', dirname));
+        if (!info || !info.file) {
+            // 相对路径
+            info = fis.uri(id, dirname);
+            info.file || (info = fis.uri(id + '.js', dirname));
+        }
 
         // combine 模式
         if (!info.file && (sibling = getKeyByValue(map, file.subpath))) {
@@ -442,6 +455,14 @@ parser.parseJs = function(content, file, conf) {
 
     file._anonymousDefineCount = file._anonymousDefineCount || 0;
 
+    // 提前先把所有带 module id 的module 标记下来。
+    modules.forEach(function(module) {
+        if (!module.id) {
+            return;
+        }
+        map[module.id] = map[module.id] || file.subpath;
+    });
+
     // 编译所有模块定义列表
     modules.forEach(function(module) {
         var argsRaw = [];   // factory 处理前的形参列表。
@@ -473,7 +494,7 @@ parser.parseJs = function(content, file, conf) {
                     return;
                 }
 
-                target = resolveModuleId(v, file, conf);
+                target = resolveModuleId(v, file, conf, module.id);
 
                 if (target && target.file) {
                     file.addRequire(target.file.id);
@@ -507,7 +528,7 @@ parser.parseJs = function(content, file, conf) {
                 var info = fis.util.stringQuote(elem.raw);
                 var target, moduleId, val, start, end;
 
-                target = resolveModuleId(v, file, conf);
+                target = resolveModuleId(v, file, conf, module.id);
 
                 if (target && target.file) {
                     file.removeRequire(v);
@@ -619,9 +640,6 @@ parser.parseJs = function(content, file, conf) {
                 content: '\''+moduleId+'\', '
             });
             file._anonymousDefineCount++;
-        } else {
-            // console.log('module [', module.id, '] defined');
-            map[module.id] = map[module.id] || file.subpath;
         }
     });
 
@@ -656,7 +674,7 @@ parser.parseJs = function(content, file, conf) {
                 var target, start, moduleId;
 
                 v = info.rest.trim();
-                target = resolveModuleId(v, file, conf);
+                target = resolveModuleId(v, file, conf, elem.id);
 
                 if (target && target.file) {
                     compileFile(target.file);
