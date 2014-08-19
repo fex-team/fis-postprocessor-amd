@@ -710,5 +710,40 @@ parser.parseJs = function(content, file, conf) {
         content = bulkReplace(content, inserts);
     }
 
+    // 为了兼容老的用法
+    requires = lib.getGlobalSyncRequires(content);
+    inserts = [];
+    if (requires.length) {
+        converter = getConverter(content);
+
+        requires.forEach(function(item) {
+            var elem = item.node.arguments[0];
+            var v = elem.value;
+            var info = fis.util.stringQuote(elem.raw);
+            var target, moduleId, val, start, end;
+
+            target = resolveModuleId(v, file, conf);
+
+            if (target && target.file) {
+                file.removeRequire(v);
+                file.addRequire(target.file.id);
+                compileFile(target.file);
+                moduleId = getModuleId(v, target.file, conf);
+                file.extras.paths[moduleId] = target.file.id;
+
+                start = converter(elem.loc.start.line, elem.loc.start.column);
+                inserts.push({
+                    start: start,
+                    len: elem.raw.length,
+                    content: info.quote + moduleId + info.quote
+                });
+            } else {
+                fis.log.warning('Can not find module `' + v + '` in [' + file.subpath + ']');
+            }
+        });
+
+        content = bulkReplace(content, inserts);
+    }
+
     return content;
 };
