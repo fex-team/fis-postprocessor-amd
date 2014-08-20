@@ -69,6 +69,7 @@ function init(conf) {
 
     if (conf.genAsyncDeps) {
         require('./lib/fis-prepackager-async-deps.js');
+        require('./lib/fis-postpackager-async-deps.js');
     }
 
     conf.packages = conf.packages.map(function(item) {
