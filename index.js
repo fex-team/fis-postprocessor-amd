@@ -428,7 +428,13 @@ function bulkReplace(content, arr) {
 parser.parseHtml = function(content, file, conf) {
     parser.scriptsReg.forEach(function(reg) {
         content = content.replace(reg, function(m, $1, $2) {
-            
+            var m2 = /\stype\s*=('|")(.*?)\1/i.exec($1);
+            var type = m2 && m2[2].toLowerCase();
+
+            if (type && !~['application/javascript', 'text/javascript'].indexOf(type)) {
+                return m;
+            }
+
             // in <script> tag
             if ($1) {
                 m = $1 + parser.parseJs($2, file, conf);
