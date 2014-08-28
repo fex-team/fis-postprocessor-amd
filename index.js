@@ -10,11 +10,7 @@
  */
 var lib = require('./lib/');
 var pth = require('path');
-
-// 自定义的 module id 表。为了方便查找。
-// key : module id.
-// value: file.subpath
-var map = {};
+var map;
 
 // 将正则特殊字符转义。
 function pregQuote (str, delimiter) {
@@ -82,6 +78,31 @@ function init(conf) {
 
         return item;
     });
+
+    map = (function() {
+        var tmpFile = fis.project.getTempPath('plugin/amd.json');
+        var opt;
+
+        if (fis.util.exists(tmpFile)) {
+            opt = fis.util.readJSON(tmpFile);
+        } else {
+            opt = {};
+        }
+
+        return {
+            get: function(key) {
+                return key ? opt[key] : opt;
+            },
+
+            set: function(key, val) {
+                opt[key] = val;
+            },
+
+            save: function() {
+                fis.util.write(tmpFile, JSON.stringify(opt));
+            }
+        }
+    })();
 
     inited = true;
 }
@@ -191,13 +212,13 @@ function getModuleId(ref, file, conf, modulename) {
 
     // ref 为用户指定的 module id 原始值
     if (ref) {
-        if (ref[0] !== '.' && ref[0] !== '/' && map[ref]) {
+        if (ref[0] !== '.' && ref[0] !== '/' && map.get(ref)) {
             // 如果为非绝对路径且不会相对路径，则看看这个 module id 是否已经定义过。
             // 如果定义过，则保留不变。
             return ref;
-        } else if (modulename && (key = pth.join(pth.dirname(modulename), ref)) && map[key]) {
+        } else if (modulename && (key = pth.join(pth.dirname(modulename), ref)) && map.get(key)) {
             return key;
-        } else if ((key = getKeyByValue(map, file.subpath))) {
+        } else if ((key = getKeyByValue(map.get(), file.subpath))) {
             // ref 为其他情况下，看这个文件是否有自定义的 module id, 有则用自定义的。
             return key;
         }
@@ -306,8 +327,8 @@ function resolveModuleId(id, file, conf, modulename) {
         if (modulename) {
             resolved = pth.join(pth.dirname(modulename), id);
 
-            if (resolved && map[resolved]) {
-                info = fis.uri(map[resolved], root);
+            if (resolved && map.get(resolved)) {
+                info = fis.uri(map.get(resolved), root);
             }
         }
         
@@ -318,11 +339,11 @@ function resolveModuleId(id, file, conf, modulename) {
         }
 
         // combine 模式
-        if (!info.file && (sibling = getKeyByValue(map, file.subpath))) {
+        if (!info.file && (sibling = getKeyByValue(map.get(), file.subpath))) {
             id = pth.join(sibling.replace(/(\/|\\)[^\/\\]+$/, ''), id);
             
-            if (id && map[id]) {
-                info = fis.uri(map[id], root);
+            if (id && map.get(id)) {
+                info = fis.uri(map.get(id), root);
             }
         }
 
@@ -339,8 +360,8 @@ function resolveModuleId(id, file, conf, modulename) {
         subpath = m[2] || '';
 
         // 先查找 map 中是否已经注册
-        if (map[path]) {
-            info = fis.uri(map[path], root);
+        if (map.get(path)) {
+            info = fis.uri(map.get(path), root);
         } else if (paths[pkg]) {
             // 再查找 conf.paths
             dirs = paths[pkg];
@@ -467,7 +488,11 @@ parser.parseJs = function(content, file, conf) {
         if (!module.id) {
             return;
         }
-        map[module.id] = map[module.id] || file.subpath;
+
+        if (map.get(module.id) !== file.subpath) {
+            map.set(module.id, file.subpath);
+            map.save();
+        }
     });
 
     // 编译所有模块定义列表
