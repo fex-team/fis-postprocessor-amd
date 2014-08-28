@@ -1,7 +1,7 @@
 fis-postprocessor-amd
 ===========================
 
-fis amd 支持，完全满足 [amdjs](https://github.com/amdjs/amdjs-api) 规范。
+fis amd 支持，完全满足 [amdjs](https://github.com/amdjs/amdjs-api) 规范。[demo](https://github.com/fex-team/fis-amd-demo)
 
 
 ## 如何使用？
