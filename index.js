@@ -112,7 +112,7 @@ var parser = module.exports = function(content, file, conf) {
     if (file.useAMD === false) {
         return content;
     }
-    
+
     init(conf);
 
     file.extras = file.extras || {};
@@ -151,7 +151,7 @@ parser.defaultOptions = {
 
     // 总开关，是否把全局环境下的 require([xxx], cb); 写法当成同步，提前加载依赖。
     globalAsyncAsSync: true,
-    
+
     // module id 模板
     moduleIdTpl: '${namespace}${subpathNoExt}',
 
@@ -288,11 +288,11 @@ function findPkg(pkg, list) {
 
 // 查找 module id.
 // 具体请查看 https://github.com/amdjs/amdjs-api/blob/master/CommonConfig.md
-// 
+//
 // 目前以下配置项是有效的。
 //  paths
 //  baseUrl
-//  packages 
+//  packages
 function resolveModuleId(id, file, conf, modulename) {
     var paths = conf.paths || {};
     var pkgs = conf.packages || [];
@@ -331,7 +331,7 @@ function resolveModuleId(id, file, conf, modulename) {
                 info = fis.uri(map.get(resolved), root);
             }
         }
-        
+
         if (!info || !info.file) {
             // 相对路径
             info = fis.uri(id, dirname);
@@ -341,14 +341,14 @@ function resolveModuleId(id, file, conf, modulename) {
         // combine 模式
         if (!info.file && (sibling = getKeyByValue(map.get(), file.subpath))) {
             id = pth.join(sibling.replace(/(\/|\\)[^\/\\]+$/, ''), id);
-            
+
             if (id && map.get(id)) {
                 info = fis.uri(map.get(id), root);
             }
         }
 
     } else if (id[0] === '/') {
-        
+
         // 绝对路径, 那也是相对与 baseUrl 的绝对路径。
         id = id.substring(1);
         info = fis.uri(id, baseUrl);
@@ -367,7 +367,7 @@ function resolveModuleId(id, file, conf, modulename) {
             dirs = paths[pkg];
 
             Array.isArray(dirs) || (dirs = [dirs]);
-            
+
             for (i = 0, len = dirs.length; i < len; i++) {
                 dir = dirs[i];
 
@@ -398,11 +398,11 @@ function resolveModuleId(id, file, conf, modulename) {
             dir = baseUrl;
             dir = pth.join(dir, item.location || item.name);
             subpath = subpath || item.main || 'main';
-            info = fis.uri(subpath, dir);            
+            info = fis.uri(subpath, dir);
             info.file || (info = fis.uri(subpath + '.js', dir));
         } else {
 
-            var top = pth.dirname(baseUrl);
+            var top = baseUrl;
             // 递归查找。
             for (dir = dirname; true;) {
                 info = fis.uri(path, dir);
@@ -418,6 +418,11 @@ function resolveModuleId(id, file, conf, modulename) {
                 if (dir === top || dir === lastdir) {
                     break;
                 }
+            }
+
+            if (!info.file) {
+                info = fis.uri(path, baseUrl);
+                info.file || (info = fis.uri(path + '.js', baseUrl));
             }
         }
     }
@@ -501,7 +506,7 @@ parser.parseJs = function(content, file, conf) {
         var deps = [];  // 最终依赖列表
         var args = [];  // 最终 factory 的形参列表
         var moduleId, start, end, params;
-        
+
         // 获取处理前的原始形参
         params = module.factory.params;
         params && params.forEach(function(param) {
@@ -591,12 +596,12 @@ parser.parseJs = function(content, file, conf) {
             //      var a = require('a');
             //      var b = require('b');
             // });
-            // 
+            //
             // define(['require', 'exports', 'module'], function(require, exports) {
             //      var a = require('a');
             //      var b = require('b');
             // });
-            // 
+            //
             if (conf.forwardDeclaration) {
 
                 if (!args.length) {
@@ -654,7 +659,7 @@ parser.parseJs = function(content, file, conf) {
 
         // 添加 module id
         if (!module.id) {
-            
+
             if (file._anonymousDefineCount) {
                 fis.log.error('The file has more than one anonymous ' +
                         'define');
@@ -685,7 +690,7 @@ parser.parseJs = function(content, file, conf) {
     // } catch (err) {
     //     console.log(file.subpath, content);
     // }
-    
+
 
     if (requires.length) {
         converter = getConverter(content);
@@ -696,7 +701,7 @@ parser.parseJs = function(content, file, conf) {
             // 因为在 define 外面，没有这样的用法： var lib = require('string');
             // 所以不存在同步用法，也就无法把同步依赖提前加载进来。
             // 为了实现提前加载依赖来提高性能，我们把global下的异步依赖认为是同步的。
-            // 
+            //
             // 当然这里有个总开关，可以通过设置 `globalAsyncAsSync` 为 false 来关闭此功能。
             var async = !conf.globalAsyncAsSync || req.isInModule;
 
@@ -731,7 +736,7 @@ parser.parseJs = function(content, file, conf) {
                         len: elem.raw.length,
                         content: info.quote + moduleId + info.quote
                     });
-                   
+
                 } else {
                     fis.log.warning('Can not find module `' + v + '` in [' + file.subpath + ']');
                 }
