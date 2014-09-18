@@ -63,10 +63,10 @@ function init(conf) {
         }
     }
 
-    if (conf.genAsyncDeps) {
-        require('./lib/fis-prepackager-async-deps.js');
-        require('./lib/fis-postpackager-async-deps.js');
-    }
+    // if (conf.genAsyncDeps) {
+    //     require('./lib/fis-prepackager-async-deps.js');
+    //     require('./lib/fis-postpackager-async-deps.js');
+    // }
 
     conf.packages = conf.packages.map(function(item) {
 
@@ -153,7 +153,9 @@ parser.defaultOptions = {
     globalAsyncAsSync: true,
 
     // module id 模板
-    moduleIdTpl: '${namespace}${subpathNoExt}',
+    moduleIdTpl: function(file) {
+        return file.id.replace(/\.js$/, '');
+    },
 
     // 用于定位模块文件用的.
     baseUrl: '.',
@@ -226,6 +228,12 @@ function getModuleId(ref, file, conf, modulename) {
 
     // 根据模板生成 module id.
     if (conf.moduleIdTpl) {
+
+        // 如果是 function
+        if (typeof conf.moduleIdTpl === 'function') {
+            return conf.moduleIdTpl.call(null, file);
+        }
+
         return conf.moduleIdTpl.replace(/\$\{([^\}]+)\}/g, function(all, $1){
             var val = file[$1] || fis.config.get($1);
 
@@ -303,24 +311,33 @@ function resolveModuleId(id, file, conf, modulename) {
     var pluginPath, info, m, pkg, path, dirs, item;
     var dir, lastdir, i, len, ns, subpath, idx, sibling, resolved;
 
+    // 支持 amd plugin
     idx = id.indexOf('!');
     if (~idx) {
         pluginPath = id.substring(idx + 1);
         id = id.substring(0, idx);
     }
 
+    // convert baseUrl
     if (baseUrl[0] !== '/') {
         baseUrl = pth.join(root, baseUrl);
     }
-
     baseUrl = pth.resolve(baseUrl);
 
     idx = id.indexOf(connector);
-    if (~idx && (ns = id.substring(0, idx)) && ns == fis.config.get('namespace')) {
+    if (~idx && (ns = id.substring(0, idx))) {
         subpath = id.substring(idx + 1);
 
-        info = fis.uri(subpath, root);
-        info.file || (info = fis.uri(subpath + '.js', root));
+        if (ns == fis.config.get('namespace')) {
+            info = fis.uri(subpath, root);
+            info.file || (info = fis.uri(subpath + '.js', root));
+        } else {
+            //  不处理其他模块的
+            return {
+                isFisId: true,
+                path: id + (/\.js$/.test(id)?'':'.js')
+            }
+        }
     } else if (id[0] === '.') {
 
         // 先相对与当前定义的模块定位。
@@ -360,6 +377,7 @@ function resolveModuleId(id, file, conf, modulename) {
         subpath = m[2] || '';
 
         // 先查找 map 中是否已经注册
+        // fixme 跨模块会不会有问题？
         if (map.get(path)) {
             info = fis.uri(map.get(path), root);
         } else if (paths[pkg]) {
@@ -370,6 +388,14 @@ function resolveModuleId(id, file, conf, modulename) {
 
             for (i = 0, len = dirs.length; i < len; i++) {
                 dir = dirs[i];
+
+                // 如果是其他模块下的路径
+                if (~dir.indexOf(connector)) {
+                    return {
+                        isFisId: true,
+                        path: dir + subpath + (!subpath || /\.js$/.test(subpath)?'':'.js')
+                    }
+                }
 
                 info = fis.uri(dir, baseUrl);
                 info.file || (info = fis.uri(dir + '.js', baseUrl));
@@ -395,6 +421,16 @@ function resolveModuleId(id, file, conf, modulename) {
 
         // 再查找 conf.packages
         } else if ((item = findPkg(pkg, pkgs))) {
+            if (~item.location.indexOf(connector)) {
+
+                subpath = subpath ? subpath : item.main || 'main';
+
+                return {
+                    isFisId: true,
+                    path: item.location + '/' + subpath + (/\.js$/.exec(subpath) ? '' : '.js')
+                }
+            }
+
             dir = baseUrl;
             dir = pth.join(dir, item.location || item.name);
             subpath = subpath || item.main || 'main';
@@ -543,6 +579,14 @@ parser.parseJs = function(content, file, conf) {
                     deps.push(info.quote + moduleId + info.quote);
                     argname = argsRaw.shift();
                     argname && args.push(argname);
+                } else if (target && target.isFisId) {
+                    file.addRequire(target.path);
+                    moduleId = target.path.replace(/\.js$/, '');
+                    file.extras.paths[moduleId] = target.path;
+
+                    deps.push(moduleId);
+                    argname = argsRaw.shift();
+                    argname && args.push(argname);
                 } else {
 
                     deps.push(elem.raw);
@@ -573,6 +617,23 @@ parser.parseJs = function(content, file, conf) {
                     compileFile(target.file);
                     moduleId = getModuleId(v, target.file, conf, module.id );
                     file.extras.paths[moduleId] = target.file.id;
+
+                    start = converter(elem.loc.start.line, elem.loc.start.column);
+                    inserts.push({
+                        start: start,
+                        len: elem.raw.length,
+                        content: info.quote + moduleId + info.quote
+                    });
+
+                    // 非依赖前置
+                    if (!conf.forwardDeclaration) {
+                        return;
+                    }
+                } else if (target && target.isFisId) {
+                    file.removeRequire(v);
+                    file.addRequire(target.path);
+                    moduleId = target.path.replace(/\.js$/, '');
+                    file.extras.paths[moduleId] = target.path;
 
                     start = converter(elem.loc.start.line, elem.loc.start.column);
                     inserts.push({
@@ -666,7 +727,7 @@ parser.parseJs = function(content, file, conf) {
                 return;
             }
 
-            moduleId = getModuleId('', file, conf);
+            module.id = moduleId = getModuleId('', file, conf);
             start = module.node.loc.start;
             start = converter(start.line, start.column);
             start += /^define\s*\(/.exec(content.substring(start))[0].length;
@@ -677,8 +738,15 @@ parser.parseJs = function(content, file, conf) {
                 content: '\''+moduleId+'\', '
             });
             file._anonymousDefineCount++;
+        } else {
+            file.extras.moduleId = module.id;
         }
     });
+
+
+    if (modules.length) {
+        file.extras.moduleId = file.extras.moduleId || modules[0].id;
+    }
 
     content = bulkReplace(content, inserts);
     inserts = [];
@@ -721,12 +789,11 @@ parser.parseJs = function(content, file, conf) {
                         if (!~file.extras.async.indexOf(target.file.id) && !~file.requires.indexOf(target.file.id)) {
                             file.extras.async.push(target.file.id);
                         }
-
-                        file.extras.asyncPaths[moduleId] = target.file.id;
                     } else {
-                        file.extras.paths[moduleId] = target.file.id;
                         file.addRequire(target.file.id);
                     }
+
+                    file.extras.paths[moduleId] = target.file.id;
 
                     start = elem.loc.start;
                     start = converter(start.line, start.column);
@@ -737,6 +804,27 @@ parser.parseJs = function(content, file, conf) {
                         content: info.quote + moduleId + info.quote
                     });
 
+                } else if (target && target.isFisId) {
+                    moduleId = target.path.replace(/\.js/, '');
+
+                    if (async) {
+                        if (!~file.extras.async.indexOf(target.path) && !~file.requires.indexOf(target.path)) {
+                            file.extras.async.push(target.path);
+                        }
+                    } else {
+                        file.addRequire(target.path);
+                    }
+
+                    file.extras.paths[moduleId] = target.path;
+
+                    start = elem.loc.start;
+                    start = converter(start.line, start.column);
+
+                    inserts.push({
+                        start: start,
+                        len: elem.raw.length,
+                        content: info.quote + moduleId + info.quote
+                    });
                 } else {
                     fis.log.warning('Can not find module `' + v + '` in [' + file.subpath + ']');
                 }
@@ -767,6 +855,18 @@ parser.parseJs = function(content, file, conf) {
                 compileFile(target.file);
                 moduleId = getModuleId(v, target.file, conf);
                 file.extras.paths[moduleId] = target.file.id;
+
+                start = converter(elem.loc.start.line, elem.loc.start.column);
+                inserts.push({
+                    start: start,
+                    len: elem.raw.length,
+                    content: info.quote + moduleId + info.quote
+                });
+            } else if (target && target.isFisId) {
+                file.removeRequire(v);
+                file.addRequire(target.path);
+                moduleId = target.path.replace(/\.js/, '');
+                file.extras.paths[moduleId] = target.path;
 
                 start = converter(elem.loc.start.line, elem.loc.start.column);
                 inserts.push({
