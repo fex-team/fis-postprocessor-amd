@@ -56,7 +56,7 @@ fis.config.merge({
     });
     ```
 
-    或者自定义  module id。
+    或者自定义  module id。不推荐
 
     ```
     define('base', function() {
