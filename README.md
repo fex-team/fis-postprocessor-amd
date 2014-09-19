@@ -26,9 +26,7 @@ fis.config.merge({
 
 ## 说明
 
-1. 相比原来的 jswrapper 对于 amd 文件包装更智能，提供依赖自动前置功能。
-2. 全局的异步 require(deps, callback) 中的依赖会被提前加载进来， 减少 http 请求数。（当然在 module 中的异步不会把依赖提前加载进来。）
-3. 支持以下各种用法：
+1. 支持以下各种用法：
 
     ```javascript
     define({
@@ -65,9 +63,9 @@ fis.config.merge({
 
     });
     ```
-4. 关于依赖写法（文件后缀.js 可写可不写）
+1. 关于依赖写法（文件后缀.js 可写可不写）
     * 相对路径 `./a` 或者 `../parent/a`
-    * 绝对路径 `/module/a`
+    * 绝对路径 `/module/a` （基于baseUrl的绝对路径）
     * 原来的 fis id 写法 `namespace:xxx/xxx.js`
     * module package
 
@@ -79,7 +77,7 @@ fis.config.merge({
         - paths 中是否有定义。
         - packages 中是否有定义。
 
-        比如：更多信息请查看[amdjs 中config 说明](https://github.com/amdjs/amdjs-api/blob/master/CommonConfig.md)。不同的是这里路径是相对于本地文件夹项目目录，而那边是相对于页面的目录。
+        类似于[amdjs 中config](https://github.com/amdjs/amdjs-api/blob/master/CommonConfig.md)。不同的是这里路径是相对于本地文件夹项目目录，而那边是相对于页面的目录。
 
         ```javascript
         fis.config.merge({
@@ -90,22 +88,24 @@ fis.config.merge({
                         baseUrl: './widget/lib/',
                         paths: {
 
-                            // 相对于  baseUrl 
+                            // 相对于  baseUrl
                             // 如果是绝对路径则相对与 root.
                             // base 的值可以是字符串，也可以是数组，会按顺序超找。
                             base: './base/base.js'
                         },
                         packages: [
                             {
-                                name: 'zrender',
-                                location: 'zrender',
-                                main: 'zrender'
-                            },
-
-                            {
                                 name: 'echarts',
                                 location: 'echarts',
                                 main: 'echarts'
+                            },
+
+                            {
+                                name: 'zrender',
+
+                                // 可以指定其他模块的路径。
+                                location: 'common:widget/libs/zrender',
+                                main: 'zrender'
                             }
                         ]
                     }
@@ -113,6 +113,9 @@ fis.config.merge({
             }
         });
         ```
+1. 相比原来的 jswrapper 对于 amd 文件包装更智能，提供依赖自动前置功能。
+1. 全局的异步 require(deps, callback) 中的依赖会被提前加载进来， 减少 http 请求数。（当然在 module 中的异步不会把依赖提前加载进来。）
+
 
 ## 配置项说明
 
@@ -143,14 +146,6 @@ fis.config.merge({
         }
     });
     ```
-2. `genAsyncDeps` 默认为 `true` 是否对异步依赖生成资源表。对于有异步依赖的文件，都会自动的生成一个 `同名文件` + 'async-map.js' 文件，并让此文件依赖新生成的 `async-map.js`。以下是一个示例文件。
-
-    ```javascript
-    require.config({"paths":{
-        "amdtest/widget/lib/base/util": "/amdtest/widget/lib/base/util_51e59c9",
-        "base": "/amdtest/widget/lib/base/base_288c046"
-    }});
-    ```
 3. `globalAsyncAsSync` 默认为 `true`，因为全局 `require` 方法不支持同步加载，只能异步加载。
 
     ```javascript
@@ -159,12 +154,11 @@ fis.config.merge({
     });
     ```
 
-    为了减少 http 请求数，此工具会把全局环境（不在 define 中）下 require([xxx], cb) 的用法认为是同步加载，会提前把相应依赖加载进来。
+    此工具会把全局环境（不在 define 中）下 require([xxx], cb) 的用法认为是程序的入口，会提前把相应依赖加载进来。
 
     如果不想启用此用法，请关闭此配置项，或者把异步 require 放在 define 中，然后同步引用新 define 的 moudle 来实现。
-4. `moduleIdTpl` 默认为 `${namespace}${subpathNoExt}` 此为 fis 默认给匿名 define 自动的补的 module id 模板。可以是使用 fis.config 变量，或者 file 里面的属性变量。
-5. `scriptsReg` 默认只识别以下写法的 script 片段，可以同过扩展此数组来支持其他格式。
-    
+5. `scriptsReg` 默认只识别以下写法的 script 片段，可以通过扩展此数组来支持其他格式。
+
     ```tpl
     <script type="text/javascript">js 片段</script>
     {%script%}js 片段{%/script%}
