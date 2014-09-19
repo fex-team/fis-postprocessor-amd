@@ -114,7 +114,7 @@ fis.config.merge({
         });
         ```
 1. 相比原来的 jswrapper 对于 amd 文件包装更智能，提供依赖自动前置功能。
-1. 全局的异步 require(deps, callback) 中的依赖会被提前加载进来， 减少 http 请求数。（当然在 module 中的异步不会把依赖提前加载进来。）
+1. 全局的异步 require(deps, callback) 中的依赖会被提前加载进来， 无需另起请求，且可以通过 fis 打包配置将依赖合并成单一文件引入，减少请求数。（当然在 module 中的异步不会把依赖提前加载进来。）
 
 
 ## 配置项说明
