@@ -648,6 +648,7 @@ parser.parseJs = function(content, file, conf) {
                     }
                 } else {
                     fis.log.warning('Can not find module `' + v + '` in [' + file.subpath + ']');
+                    moduleId = v;
                 }
 
                 deps.push(info.quote + moduleId + info.quote);
