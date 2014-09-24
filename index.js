@@ -154,7 +154,10 @@ parser.defaultOptions = {
 
     // module id 模板
     moduleIdTpl: function(file) {
-        return file.id.replace(/\.js$/, '');
+        var ns = fis.config.get('namespace');
+        var id = (file.release || file.subpath).replace(/^\//, '').replace(/\.js$/, '');
+
+        return ns ? (ns + ':' + id) : id;
     },
 
     // 用于定位模块文件用的.
