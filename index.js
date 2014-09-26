@@ -154,10 +154,13 @@ parser.defaultOptions = {
 
     // module id 模板
     moduleIdTpl: function(file) {
-        var ns = fis.config.get('namespace');
-        var id = (file.release || file.subpath).replace(/^\//, '').replace(/\.js$/, '');
+        return file.id.replace(/\.js$/, '');
 
-        return ns ? (ns + ':' + id) : id;
+        // 如果要允许跨模块的话，不能改成 release 后的地址，否则对应不上。
+        // var ns = fis.config.get('namespace');
+        // var id = (file.release || file.subpath).replace(/^\//, '').replace(/\.js$/, '');
+
+        // return ns ? (ns + ':' + id) : id;
     },
 
     // 用于定位模块文件用的.
