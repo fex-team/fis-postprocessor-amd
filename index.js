@@ -154,13 +154,10 @@ parser.defaultOptions = {
 
     // module id 模板
     moduleIdTpl: function(file) {
-        return file.id.replace(/\.js$/, '');
+        var ns = fis.config.get('namespace');
+        var id = (file.release || file.subpath).replace(/^\//, '').replace(/\.js$/, '');
 
-        // 如果要允许跨模块的话，不能改成 release 后的地址，否则对应不上。
-        // var ns = fis.config.get('namespace');
-        // var id = (file.release || file.subpath).replace(/^\//, '').replace(/\.js$/, '');
-
-        // return ns ? (ns + ':' + id) : id;
+        return ns ? (ns + ':' + id) : id;
     },
 
     // 用于定位模块文件用的.
@@ -778,7 +775,7 @@ parser.parseJs = function(content, file, conf) {
             // 为了实现提前加载依赖来提高性能，我们把global下的异步依赖认为是同步的。
             //
             // 当然这里有个总开关，可以通过设置 `globalAsyncAsSync` 为 false 来关闭此功能。
-            var async = !conf.globalAsyncAsSync || req.isInModule;
+            var async = !conf.globalAsyncAsSync || req.isInModule || req.markAsync;
 
             (req.deps || []).forEach(function(elem) {
                 var v = elem.raw;
