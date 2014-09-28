@@ -81,9 +81,19 @@ function init(conf) {
 
     map = (function() {
         var tmpFile = fis.project.getTempPath('plugin/amd.json');
+        var clean = false;
         var opt;
 
-        if (fis.util.exists(tmpFile)) {
+        try {
+            var args = process.title;
+            if (/\-[^\-]*c/.exec(args) || /\-\-clean/i.exec(args)) {
+                clean = true;
+            }
+        } catch (e) {
+            //
+        }
+
+        if (fis.util.exists(tmpFile) && !clean) {
             opt = fis.util.readJSON(tmpFile);
         } else {
             opt = {};
