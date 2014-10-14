@@ -63,10 +63,33 @@ function init(conf) {
         }
     }
 
-    // if (conf.genAsyncDeps) {
-    //     require('./lib/fis-prepackager-async-deps.js');
-    //     require('./lib/fis-postpackager-async-deps.js');
-    // }
+    // normalize shim
+    if (conf.shim) {
+        var shim = conf.shim;
+        var normalized = {};
+
+        Object.keys(shim).forEach(function(key) {
+            var val = shim[key];
+
+            var info = fis.uri(key, fis.project.getProjectPath());
+
+            if (!info.file) {
+                return;
+            }
+
+            key = info.file.subpath;
+
+            if (Array.isArray(val)) {
+                val = {
+                    deps: val
+                }
+            }
+
+            normalized[key] = val;
+        });
+
+        conf.shim = normalized;
+    }
 
     conf.packages = conf.packages.map(function(item) {
 
@@ -133,9 +156,6 @@ var parser = module.exports = function(content, file, conf) {
     // 同步依赖表，  module id: map id
     file.extras.paths = file.extras.paths || {};
 
-    // 异步依赖表,  module id: map id
-    file.extras.asyncPaths = file.extras.asyncPaths || {};
-
     if (file.isHtmlLike) {
         content = parser.parseHtml(content, file, conf);
     } else if (file.rExt === '.js') {
@@ -145,7 +165,6 @@ var parser = module.exports = function(content, file, conf) {
     // 减少 map.json 体积，把没用的删了。
     file.extras.async.length || (delete file.extras.async);
     isEmptyObject(file.extras.paths) && (delete file.extras.paths);
-    isEmptyObject(file.extras.asyncPaths) && (delete file.extras.asyncPaths);
     isEmptyObject(file.extras) && (delete file.extras);
 
     return content;
@@ -155,9 +174,6 @@ var parser = module.exports = function(content, file, conf) {
 parser.defaultOptions = {
     // 是否把 amd define 定义模块依赖提前。
     forwardDeclaration: true,
-
-    // 是否生成依赖表。
-    genAsyncDeps: true,
 
     // 总开关，是否把全局环境下的 require([xxx], cb); 写法当成同步，提前加载依赖。
     globalAsyncAsSync: true,
@@ -173,7 +189,8 @@ parser.defaultOptions = {
     // 用于定位模块文件用的.
     baseUrl: '.',
     paths: {},
-    packages: []
+    packages: [],
+    shim: {}
 };
 
 // 默认 script 正则
@@ -276,12 +293,38 @@ function getConverter(content) {
 };
 
 // 包装成 amd 格式。
-function wrapAMD(content, file, conf) {
-    var moduleId = getModuleId('', file, conf);
+function wrapAMD(content, file, conf, shim) {
 
-    content = 'define(\'' + moduleId + '\', function(require, exports, module) {\n' + content + '\n});';
+    shim = shim || {};
 
-    return content;
+    var moduleId = shim.id || getModuleId('', file, conf);
+
+    var prefix = 'define(\'' + moduleId + '\', function(require, exports, module) {\n';
+    var affix = '\n});';
+
+    if (shim.deps) {
+        shim.deps.forEach(function(dep) {
+            prefix += 'require(\'' + dep + '\');\n';
+        });
+    }
+
+    if (shim.init) {
+        affix = 'modules.exports = ('+shim.init+')('+(function() {
+            var deps = [];
+
+            if (shim.deps) {
+                shim.deps.forEach(function(dep) {
+                    deps.push('require(\''+ dep +'\')');
+                });
+            }
+
+            return deps.join(', ');
+        })()+');\n' + affix;
+    } else if (shim.exports) {
+        affix = 'module.exports = ' + shim.exports + ';\n' + affix;
+    }
+
+    return prefix + content + affix;
 }
 
 function isEmptyObject(obj) {
@@ -335,7 +378,7 @@ function resolveModuleId(id, file, conf, modulename) {
     if (baseUrl[0] !== '/') {
         baseUrl = pth.join(root, baseUrl);
     }
-    baseUrl = pth.resolve(baseUrl);
+    baseUrl = pth.rve(baseUrl);
 
     idx = id.indexOf(connector);
     if (~idx && (ns = id.substring(0, idx))) {
@@ -348,7 +391,8 @@ function resolveModuleId(id, file, conf, modulename) {
             //  不处理其他模块的
             return {
                 isFisId: true,
-                path: id + (/\.js$/.test(id)?'':'.js')
+                path: id + (/\.js$/.test(id)?'':'.js'),
+                pluginPath: pluginPath
             }
         }
     } else if (id[0] === '.') {
@@ -384,6 +428,12 @@ function resolveModuleId(id, file, conf, modulename) {
         info = fis.uri(id, baseUrl);
         info.file || (info = fis.uri(id + '.js', baseUrl));
 
+        // 然后再试试 root 目录下面
+        if (!info.file) {
+            info = fis.uri(id, root);
+            info.file || (info = fis.uri(id + '.js', root));
+        }
+
     } else if ((m = /^([^\/]+)(?:\/(.*))?$/.exec(id))) {
         path = m[0];
         pkg = m[1];
@@ -413,18 +463,32 @@ function resolveModuleId(id, file, conf, modulename) {
                 info = fis.uri(dir, baseUrl);
                 info.file || (info = fis.uri(dir + '.js', baseUrl));
 
+                if (!info.file) {
+                    info = fis.uri(dir, root);
+                    info.file || (info = fis.uri(dir + '.js', root));
+                }
+
                 if (info.file || !subpath) {
                     break;
                 }
 
                 // 没找到，再来当文件夹处理
 
-                if (dir[0] !== '/') {
-                    dir = pth.join(baseUrl, dir);
+                var dirorign = dir;
+
+                if (dirorign[0] !== '/') {
+                    dir = pth.join(baseUrl, dirorign);
                 }
 
                 info = fis.uri(subpath, dir);
                 info.file || (info = fis.uri(subpath + '.js', dir));
+
+
+                if (!info.file && dirorign[0] !== '/') {
+                    dir = pth.join(baseUrl, dirorign);
+                    info = fis.uri(subpath, dir);
+                    info.file || (info = fis.uri(subpath + '.js', dir));
+                }
 
                 // 如果找到了需要断开。
                 if (info.file) {
@@ -440,7 +504,8 @@ function resolveModuleId(id, file, conf, modulename) {
 
                 return {
                     isFisId: true,
-                    path: item.location + '/' + subpath + (/\.js$/.exec(subpath) ? '' : '.js')
+                    path: item.location + '/' + subpath + (/\.js$/.exec(subpath) ? '' : '.js'),
+                    pluginPath: pluginPath
                 }
             }
 
@@ -449,7 +514,34 @@ function resolveModuleId(id, file, conf, modulename) {
             subpath = subpath || item.main || 'main';
             info = fis.uri(subpath, dir);
             info.file || (info = fis.uri(subpath + '.js', dir));
+
+            if (!info.file) {
+                dir = pth.join(root, item.location || item.name);
+                info = fis.uri(subpath, dir);
+                info.file || (info = fis.uri(subpath + '.js', dir));
+            }
         } else {
+
+            if (conf.shim) {
+                var shim = conf.shim;
+
+                for (var key in shim) {
+                    if (!shim.hasOwnProperty(key)) {
+                        continue;
+                    }
+
+                    var val = shim[key];
+                    if (val.id === pkg ) {
+                        info = fis.uri(key, root);
+                        if (info.file) {
+                            return {
+                                file: info.file,
+                                pluginPath: pluginPath
+                            }
+                        }
+                    }
+                }
+            }
 
             var top = baseUrl;
             // 递归查找。
@@ -473,11 +565,17 @@ function resolveModuleId(id, file, conf, modulename) {
                 info = fis.uri(path, baseUrl);
                 info.file || (info = fis.uri(path + '.js', baseUrl));
             }
+
+            if (!info.file) {
+                info = fis.uri(path, root);
+                info.file || (info = fis.uri(path + '.js', root));
+            }
         }
     }
 
     return {
-        file: info && info.file
+        file: info && info.file,
+        pluginPath: pluginPath
     }
 }
 
@@ -527,8 +625,15 @@ parser.parseJs = function(content, file, conf) {
     var inserts = [];
     var converter, requires;
 
-    // 没找到 amd 定义, 则需要包装
-    if (!modules.length && !file.isHtmlLike && (typeof file.useAMDWrap === 'undefined' ? (file.isMod || conf.wrapAll) : file.useAMDWrap)) {
+
+    // 检测 shim
+    if (!modules.length && conf.shim[file.subpath]) {
+        content = wrapAMD(content, file, conf, conf.shim[file.subpath]);
+        modules = lib.getAMDModules(content);
+    } else if (!modules.length && !file.isHtmlLike && (typeof file.useAMDWrap === 'undefined' ? (file.isMod || conf.wrapAll) : file.useAMDWrap)) {
+
+        // 没找到 amd 定义, 则需要包装
+
         content = wrapAMD(content, file, conf);
         modules = lib.getAMDModules(content);
     }
