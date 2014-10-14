@@ -378,7 +378,7 @@ function resolveModuleId(id, file, conf, modulename) {
     if (baseUrl[0] !== '/') {
         baseUrl = pth.join(root, baseUrl);
     }
-    baseUrl = pth.rve(baseUrl);
+    baseUrl = pth.resolve(baseUrl);
 
     idx = id.indexOf(connector);
     if (~idx && (ns = id.substring(0, idx))) {
