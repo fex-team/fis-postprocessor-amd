@@ -1,0 +1,55 @@
+{
+    "res": {
+        "ns:index2.html": {
+            "uri": "/index2.html",
+            "type": "html",
+            "extras": {
+                "paths": {
+                    "ns:modC": "ns:modC.js"
+                }
+            },
+            "deps": [
+                "ns:modC.js"
+            ]
+        },
+        "ns:modA.js": {
+            "uri": "/modA_f1096a5.js",
+            "type": "js",
+            "extras": {
+                "moduleId": "modA"
+            }
+        },
+        "ns:modB.js": {
+            "uri": "/modB_4049228.js",
+            "type": "js",
+            "extras": {
+                "moduleId": "modB"
+            }
+        },
+        "ns:modC.js": {
+            "uri": "/modC_02ac744.js",
+            "type": "js",
+            "extras": {
+                "async": [
+                    "ns:modA.js",
+                    "ns:modB.js"
+                ],
+                "paths": {
+                    "modA": "ns:modA.js",
+                    "modB": "ns:modB.js"
+                },
+                "moduleId": "ns:modC"
+            },
+            "pkg": "ns:p0"
+        }
+    },
+    "pkg": {
+        "ns:p0": {
+            "uri": "/pkg/index2-deps_02ac744.js",
+            "type": "js",
+            "has": [
+                "ns:modC.js"
+            ]
+        }
+    }
+}

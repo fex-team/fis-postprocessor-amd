@@ -24,9 +24,9 @@
     "estraverse": "~1.5.1"
   },
   "devDependencies": {
-    "mocha": "~1.21.3",
+    "fis": "~1.7.14",
     "istanbul": "~0.3.0",
-    "should": "~4.0.4",
-    "fis": "~1.7.14"
+    "mocha": "~1.21.3",
+    "tmp": "0.0.24"
   }
 }

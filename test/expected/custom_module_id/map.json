@@ -1,0 +1,38 @@
+{
+    "res": {
+        "modA.js": {
+            "uri": "/modA.js",
+            "type": "js",
+            "extras": {
+                "moduleId": "modA"
+            }
+        },
+        "modB.js": {
+            "uri": "/modB.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "modA": "modA.js"
+                },
+                "moduleId": "modB"
+            },
+            "deps": [
+                "modA.js"
+            ]
+        },
+        "modC.js": {
+            "uri": "/modC.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "modA": "modA.js"
+                },
+                "moduleId": "modC"
+            },
+            "deps": [
+                "modA.js"
+            ]
+        }
+    },
+    "pkg": {}
+}

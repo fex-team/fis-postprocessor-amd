@@ -1,0 +1,12 @@
+{
+    "res": {
+        "script.js": {
+            "uri": "/script.js",
+            "type": "js",
+            "extras": {
+                "moduleId": "script"
+            }
+        }
+    },
+    "pkg": {}
+}

@@ -1,0 +1,86 @@
+{
+    "res": {
+        "modA.js": {
+            "uri": "/modA.js",
+            "type": "js",
+            "extras": {
+                "moduleId": "modA"
+            }
+        },
+        "modB.js": {
+            "uri": "/modB.js",
+            "type": "js",
+            "extras": {
+                "moduleId": "modB"
+            }
+        },
+        "modC.js": {
+            "uri": "/modC.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "modA": "modA.js",
+                    "modB": "modB.js"
+                },
+                "moduleId": "modC"
+            },
+            "deps": [
+                "modA.js",
+                "modB.js"
+            ]
+        },
+        "modD.js": {
+            "uri": "/modD.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "modA": "modA.js",
+                    "modB": "modB.js"
+                },
+                "moduleId": "modD"
+            },
+            "deps": [
+                "modA.js",
+                "modB.js"
+            ]
+        },
+        "modE.js": {
+            "uri": "/modE.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "modA": "modA.js",
+                    "modB": "modB.js"
+                },
+                "moduleId": "modE"
+            },
+            "deps": [
+                "modA.js",
+                "modB.js"
+            ]
+        },
+        "modF.js": {
+            "uri": "/modF.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "modA": "modA.js",
+                    "modB": "modB.js"
+                },
+                "moduleId": "modF"
+            },
+            "deps": [
+                "modA.js",
+                "modB.js"
+            ]
+        },
+        "modG.js": {
+            "uri": "/modG.js",
+            "type": "js",
+            "extras": {
+                "moduleId": "modG"
+            }
+        }
+    },
+    "pkg": {}
+}

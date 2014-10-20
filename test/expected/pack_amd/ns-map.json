@@ -1,0 +1,55 @@
+{
+    "res": {
+        "ns:index2.html": {
+            "uri": "/index2.html",
+            "type": "html",
+            "extras": {
+                "paths": {
+                    "ns:modC": "ns:modC.js"
+                }
+            },
+            "deps": [
+                "ns:modC.js"
+            ]
+        },
+        "ns:modA.js": {
+            "uri": "/modA.js",
+            "type": "js",
+            "extras": {
+                "moduleId": "modA"
+            }
+        },
+        "ns:modB.js": {
+            "uri": "/modB.js",
+            "type": "js",
+            "extras": {
+                "moduleId": "modB"
+            }
+        },
+        "ns:modC.js": {
+            "uri": "/modC.js",
+            "type": "js",
+            "extras": {
+                "async": [
+                    "ns:modA.js",
+                    "ns:modB.js"
+                ],
+                "paths": {
+                    "modA": "ns:modA.js",
+                    "modB": "ns:modB.js"
+                },
+                "moduleId": "ns:modC"
+            },
+            "pkg": "ns:p0"
+        }
+    },
+    "pkg": {
+        "ns:p0": {
+            "uri": "/pkg/index2-deps.js",
+            "type": "js",
+            "has": [
+                "ns:modC.js"
+            ]
+        }
+    }
+}

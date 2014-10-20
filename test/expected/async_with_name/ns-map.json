@@ -1,0 +1,87 @@
+{
+    "res": {
+        "ns:app.js": {
+            "uri": "/app.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "ns:modC": "ns:modC.js"
+                }
+            },
+            "deps": [
+                "ns:modC.js"
+            ]
+        },
+        "ns:index.html": {
+            "uri": "/index.html",
+            "type": "html",
+            "extras": {
+                "paths": {
+                    "modA": "ns:modA.js",
+                    "modB": "ns:modB.js"
+                }
+            },
+            "deps": [
+                "ns:modA.js",
+                "ns:modB.js"
+            ]
+        },
+        "ns:index2.html": {
+            "uri": "/index2.html",
+            "type": "html",
+            "extras": {
+                "paths": {
+                    "ns:modC": "ns:modC.js"
+                }
+            },
+            "deps": [
+                "ns:modC.js"
+            ]
+        },
+        "ns:modA.js": {
+            "uri": "/modA.js",
+            "type": "js",
+            "extras": {
+                "moduleId": "modA"
+            }
+        },
+        "ns:modB.js": {
+            "uri": "/modB.js",
+            "type": "js",
+            "extras": {
+                "moduleId": "modB"
+            }
+        },
+        "ns:modC.js": {
+            "uri": "/modC.js",
+            "type": "js",
+            "extras": {
+                "async": [
+                    "ns:modA.js",
+                    "ns:modB.js"
+                ],
+                "paths": {
+                    "modA": "ns:modA.js",
+                    "modB": "ns:modB.js"
+                },
+                "moduleId": "ns:modC"
+            }
+        },
+        "ns:modD.js": {
+            "uri": "/modD.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "modA": "ns:modA.js",
+                    "modB": "ns:modB.js"
+                },
+                "moduleId": "ns:modD"
+            },
+            "deps": [
+                "ns:modA.js",
+                "ns:modB.js"
+            ]
+        }
+    },
+    "pkg": {}
+}

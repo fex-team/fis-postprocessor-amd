@@ -1,0 +1,1094 @@
+{
+    "res": {
+        "amd/btModuleId/has.dot.js": {
+            "uri": "/amd/btModuleId/has.dot.js",
+            "type": "js",
+            "extras": {
+                "moduleId": "amd/btModuleId/has.dot"
+            }
+        },
+        "amd/btModuleId/index.js": {
+            "uri": "/amd/btModuleId/index.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/btModuleId/has.dot": "amd/btModuleId/has.dot.js"
+                },
+                "moduleId": "amd/btModuleId/index"
+            },
+            "deps": [
+                "amd/btModuleId/has.dot.js"
+            ]
+        },
+        "amd/circleDependency/a.js": {
+            "uri": "/amd/circleDependency/a.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/circleDependency/b": "amd/circleDependency/b.js"
+                },
+                "moduleId": "amd/circleDependency/a"
+            },
+            "deps": [
+                "amd/circleDependency/b.js"
+            ]
+        },
+        "amd/circleDependency/b.js": {
+            "uri": "/amd/circleDependency/b.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/circleDependency/c": "amd/circleDependency/c.js",
+                    "amd/circleDependency/a": "amd/circleDependency/a.js"
+                },
+                "moduleId": "amd/circleDependency/b"
+            },
+            "deps": [
+                "amd/circleDependency/c.js",
+                "amd/circleDependency/a.js"
+            ]
+        },
+        "amd/circleDependency/c.js": {
+            "uri": "/amd/circleDependency/c.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/circleDependency/a": "amd/circleDependency/a.js"
+                },
+                "moduleId": "amd/circleDependency/c"
+            },
+            "deps": [
+                "amd/circleDependency/a.js"
+            ]
+        },
+        "amd/circleDependency/cat.js": {
+            "uri": "/amd/circleDependency/cat.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/circleDependency/a": "amd/circleDependency/a.js",
+                    "amd/circleDependency/d": "amd/circleDependency/d.js"
+                },
+                "moduleId": "amd/circleDependency/cat"
+            },
+            "deps": [
+                "amd/circleDependency/a.js",
+                "amd/circleDependency/d.js"
+            ]
+        },
+        "amd/circleDependency/d.js": {
+            "uri": "/amd/circleDependency/d.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/circleDependency/e": "amd/circleDependency/e.js"
+                },
+                "moduleId": "amd/circleDependency/d"
+            },
+            "deps": [
+                "amd/circleDependency/e.js"
+            ]
+        },
+        "amd/circleDependency/dog.js": {
+            "uri": "/amd/circleDependency/dog.js",
+            "type": "js",
+            "extras": {
+                "moduleId": "amd/circleDependency/dog"
+            }
+        },
+        "amd/circleDependency/e.js": {
+            "uri": "/amd/circleDependency/e.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/circleDependency/d": "amd/circleDependency/d.js"
+                },
+                "moduleId": "amd/circleDependency/e"
+            },
+            "deps": [
+                "amd/circleDependency/d.js"
+            ]
+        },
+        "amd/circleDependency/index.js": {
+            "uri": "/amd/circleDependency/index.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/circleDependency/cat": "amd/circleDependency/cat.js",
+                    "amd/circleDependency/dog": "amd/circleDependency/dog.js"
+                },
+                "moduleId": "amd/circleDependency/index"
+            },
+            "deps": [
+                "amd/circleDependency/cat.js",
+                "amd/circleDependency/dog.js"
+            ]
+        },
+        "amd/combine/index.js": {
+            "uri": "/amd/combine/index.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/combine/index": "amd/combine/index.js",
+                    "amd/combine/cat": "amd/combine/index.js",
+                    "amd/combine/dog": "amd/combine/index.js",
+                    "amd/combine/tiger": "amd/combine/index.js",
+                    "amd/combine/lion": "amd/combine/index.js"
+                },
+                "moduleId": "amd/combine/index"
+            },
+            "deps": [
+                "amd/combine/index.js"
+            ]
+        },
+        "amd/combineplugin/index.js": {
+            "uri": "/amd/combineplugin/index.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/combineplugin/cat": "amd/combineplugin/index.js"
+                },
+                "moduleId": "amd/combineplugin/index"
+            },
+            "deps": [
+                "amd/combineplugin/index.js"
+            ]
+        },
+        "amd/combineplugin2/index.js": {
+            "uri": "/amd/combineplugin2/index.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/combineplugin2/plugin": "amd/combineplugin2/index.js"
+                },
+                "moduleId": "amd/combineplugin2/index"
+            },
+            "deps": [
+                "amd/combineplugin2/index.js"
+            ]
+        },
+        "amd/complexCircleDependency/a.js": {
+            "uri": "/amd/complexCircleDependency/a.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/complexCircleDependency/b": "amd/complexCircleDependency/b.js"
+                },
+                "moduleId": "amd/complexCircleDependency/a"
+            },
+            "deps": [
+                "amd/complexCircleDependency/b.js"
+            ]
+        },
+        "amd/complexCircleDependency/b.js": {
+            "uri": "/amd/complexCircleDependency/b.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/complexCircleDependency/c": "amd/complexCircleDependency/c.js"
+                },
+                "moduleId": "amd/complexCircleDependency/b"
+            },
+            "deps": [
+                "amd/complexCircleDependency/c.js"
+            ]
+        },
+        "amd/complexCircleDependency/c.js": {
+            "uri": "/amd/complexCircleDependency/c.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/complexCircleDependency/d": "amd/complexCircleDependency/d.js"
+                },
+                "moduleId": "amd/complexCircleDependency/c"
+            },
+            "deps": [
+                "amd/complexCircleDependency/d.js"
+            ]
+        },
+        "amd/complexCircleDependency/d.js": {
+            "uri": "/amd/complexCircleDependency/d.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/complexCircleDependency/e": "amd/complexCircleDependency/e.js"
+                },
+                "moduleId": "amd/complexCircleDependency/d"
+            },
+            "deps": [
+                "amd/complexCircleDependency/e.js"
+            ]
+        },
+        "amd/complexCircleDependency/e.js": {
+            "uri": "/amd/complexCircleDependency/e.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/complexCircleDependency/f": "amd/complexCircleDependency/f.js"
+                },
+                "moduleId": "amd/complexCircleDependency/e"
+            },
+            "deps": [
+                "amd/complexCircleDependency/f.js"
+            ]
+        },
+        "amd/complexCircleDependency/f.js": {
+            "uri": "/amd/complexCircleDependency/f.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/complexCircleDependency/c": "amd/complexCircleDependency/c.js",
+                    "amd/complexCircleDependency/g": "amd/complexCircleDependency/g.js"
+                },
+                "moduleId": "amd/complexCircleDependency/f"
+            },
+            "deps": [
+                "amd/complexCircleDependency/c.js",
+                "amd/complexCircleDependency/g.js"
+            ]
+        },
+        "amd/complexCircleDependency/g.js": {
+            "uri": "/amd/complexCircleDependency/g.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/complexCircleDependency/a": "amd/complexCircleDependency/a.js"
+                },
+                "moduleId": "amd/complexCircleDependency/g"
+            },
+            "deps": [
+                "amd/complexCircleDependency/a.js"
+            ]
+        },
+        "amd/complexCircleDependency/index.js": {
+            "uri": "/amd/complexCircleDependency/index.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/complexCircleDependency/a": "amd/complexCircleDependency/a.js"
+                },
+                "moduleId": "amd/complexCircleDependency/index"
+            },
+            "deps": [
+                "amd/complexCircleDependency/a.js"
+            ]
+        },
+        "amd/complexCircleDependency2/h1.js": {
+            "uri": "/amd/complexCircleDependency2/h1.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/complexCircleDependency2/h2": "amd/complexCircleDependency2/h2.js"
+                },
+                "moduleId": "amd/complexCircleDependency2/h1"
+            },
+            "deps": [
+                "amd/complexCircleDependency2/h2.js"
+            ]
+        },
+        "amd/complexCircleDependency2/h2.js": {
+            "uri": "/amd/complexCircleDependency2/h2.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/complexCircleDependency2/s1": "amd/complexCircleDependency2/s1.js"
+                },
+                "moduleId": "amd/complexCircleDependency2/h2"
+            },
+            "deps": [
+                "amd/complexCircleDependency2/s1.js"
+            ]
+        },
+        "amd/complexCircleDependency2/h3.js": {
+            "uri": "/amd/complexCircleDependency2/h3.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/complexCircleDependency2/h1": "amd/complexCircleDependency2/h1.js"
+                },
+                "moduleId": "amd/complexCircleDependency2/h3"
+            },
+            "deps": [
+                "amd/complexCircleDependency2/h1.js"
+            ]
+        },
+        "amd/complexCircleDependency2/index.js": {
+            "uri": "/amd/complexCircleDependency2/index.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/complexCircleDependency2/h1": "amd/complexCircleDependency2/h1.js"
+                },
+                "moduleId": "amd/complexCircleDependency2/index"
+            },
+            "deps": [
+                "amd/complexCircleDependency2/h1.js"
+            ]
+        },
+        "amd/complexCircleDependency2/s1.js": {
+            "uri": "/amd/complexCircleDependency2/s1.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/complexCircleDependency2/h3": "amd/complexCircleDependency2/h3.js"
+                },
+                "moduleId": "amd/complexCircleDependency2/s1"
+            },
+            "deps": [
+                "amd/complexCircleDependency2/h3.js"
+            ]
+        },
+        "amd/complexCircleDependency3/b.js": {
+            "uri": "/amd/complexCircleDependency3/b.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/complexCircleDependency3/c": "amd/complexCircleDependency3/c.js"
+                },
+                "moduleId": "amd/complexCircleDependency3/b"
+            },
+            "deps": [
+                "amd/complexCircleDependency3/c.js"
+            ]
+        },
+        "amd/complexCircleDependency3/c.js": {
+            "uri": "/amd/complexCircleDependency3/c.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/complexCircleDependency3/g": "amd/complexCircleDependency3/g.js",
+                    "amd/complexCircleDependency3/d": "amd/complexCircleDependency3/d.js"
+                },
+                "moduleId": "amd/complexCircleDependency3/c"
+            },
+            "deps": [
+                "amd/complexCircleDependency3/g.js",
+                "amd/complexCircleDependency3/d.js"
+            ]
+        },
+        "amd/complexCircleDependency3/d.js": {
+            "uri": "/amd/complexCircleDependency3/d.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/complexCircleDependency3/b": "amd/complexCircleDependency3/b.js",
+                    "amd/complexCircleDependency3/e": "amd/complexCircleDependency3/e.js"
+                },
+                "moduleId": "amd/complexCircleDependency3/d"
+            },
+            "deps": [
+                "amd/complexCircleDependency3/b.js",
+                "amd/complexCircleDependency3/e.js"
+            ]
+        },
+        "amd/complexCircleDependency3/e.js": {
+            "uri": "/amd/complexCircleDependency3/e.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/complexCircleDependency3/index": "amd/complexCircleDependency3/index.js"
+                },
+                "moduleId": "amd/complexCircleDependency3/e"
+            },
+            "deps": [
+                "amd/complexCircleDependency3/index.js"
+            ]
+        },
+        "amd/complexCircleDependency3/g.js": {
+            "uri": "/amd/complexCircleDependency3/g.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/complexCircleDependency3/h": "amd/complexCircleDependency3/h.js"
+                },
+                "moduleId": "amd/complexCircleDependency3/g"
+            },
+            "deps": [
+                "amd/complexCircleDependency3/h.js"
+            ]
+        },
+        "amd/complexCircleDependency3/h.js": {
+            "uri": "/amd/complexCircleDependency3/h.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/complexCircleDependency3/i": "amd/complexCircleDependency3/i.js"
+                },
+                "moduleId": "amd/complexCircleDependency3/h"
+            },
+            "deps": [
+                "amd/complexCircleDependency3/i.js"
+            ]
+        },
+        "amd/complexCircleDependency3/i.js": {
+            "uri": "/amd/complexCircleDependency3/i.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/complexCircleDependency3/j": "amd/complexCircleDependency3/j.js"
+                },
+                "moduleId": "amd/complexCircleDependency3/i"
+            },
+            "deps": [
+                "amd/complexCircleDependency3/j.js"
+            ]
+        },
+        "amd/complexCircleDependency3/index.js": {
+            "uri": "/amd/complexCircleDependency3/index.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/complexCircleDependency3/b": "amd/complexCircleDependency3/b.js"
+                },
+                "moduleId": "amd/complexCircleDependency3/index"
+            },
+            "deps": [
+                "amd/complexCircleDependency3/b.js"
+            ]
+        },
+        "amd/complexCircleDependency3/j.js": {
+            "uri": "/amd/complexCircleDependency3/j.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/complexCircleDependency3/c": "amd/complexCircleDependency3/c.js"
+                },
+                "moduleId": "amd/complexCircleDependency3/j"
+            },
+            "deps": [
+                "amd/complexCircleDependency3/c.js"
+            ]
+        },
+        "amd/deepDependency/index.js": {
+            "uri": "/amd/deepDependency/index.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/deepDependency/level1": "amd/deepDependency/level1.js",
+                    "amd/deepDependency/level11": "amd/deepDependency/level11.js"
+                },
+                "moduleId": "amd/deepDependency/index"
+            },
+            "deps": [
+                "amd/deepDependency/level1.js",
+                "amd/deepDependency/level11.js"
+            ]
+        },
+        "amd/deepDependency/level1.js": {
+            "uri": "/amd/deepDependency/level1.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/deepDependency/level2": "amd/deepDependency/level2.js",
+                    "amd/deepDependency/level21": "amd/deepDependency/level21.js"
+                },
+                "moduleId": "amd/deepDependency/level1"
+            },
+            "deps": [
+                "amd/deepDependency/level2.js",
+                "amd/deepDependency/level21.js"
+            ]
+        },
+        "amd/deepDependency/level11.js": {
+            "uri": "/amd/deepDependency/level11.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/deepDependency/level22": "amd/deepDependency/level22.js",
+                    "amd/deepDependency/level23": "amd/deepDependency/level23.js"
+                },
+                "moduleId": "amd/deepDependency/level11"
+            },
+            "deps": [
+                "amd/deepDependency/level22.js",
+                "amd/deepDependency/level23.js"
+            ]
+        },
+        "amd/deepDependency/level2.js": {
+            "uri": "/amd/deepDependency/level2.js",
+            "type": "js",
+            "extras": {
+                "moduleId": "amd/deepDependency/level2"
+            }
+        },
+        "amd/deepDependency/level21.js": {
+            "uri": "/amd/deepDependency/level21.js",
+            "type": "js",
+            "extras": {
+                "moduleId": "amd/deepDependency/level21"
+            }
+        },
+        "amd/deepDependency/level22.js": {
+            "uri": "/amd/deepDependency/level22.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/deepDependency/level3": "amd/deepDependency/level3.js"
+                },
+                "moduleId": "amd/deepDependency/level22"
+            },
+            "deps": [
+                "amd/deepDependency/level3.js"
+            ]
+        },
+        "amd/deepDependency/level23.js": {
+            "uri": "/amd/deepDependency/level23.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/deepDependency/level31": "amd/deepDependency/level31.js"
+                },
+                "moduleId": "amd/deepDependency/level23"
+            },
+            "deps": [
+                "amd/deepDependency/level31.js"
+            ]
+        },
+        "amd/deepDependency/level3.js": {
+            "uri": "/amd/deepDependency/level3.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/deepDependency/level4": "amd/deepDependency/level4.js"
+                },
+                "moduleId": "amd/deepDependency/level3"
+            },
+            "deps": [
+                "amd/deepDependency/level4.js"
+            ]
+        },
+        "amd/deepDependency/level31.js": {
+            "uri": "/amd/deepDependency/level31.js",
+            "type": "js",
+            "extras": {
+                "moduleId": "amd/deepDependency/level31"
+            }
+        },
+        "amd/deepDependency/level4.js": {
+            "uri": "/amd/deepDependency/level4.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/deepDependency/level5": "amd/deepDependency/level5.js"
+                },
+                "moduleId": "amd/deepDependency/level4"
+            },
+            "deps": [
+                "amd/deepDependency/level5.js"
+            ]
+        },
+        "amd/deepDependency/level5.js": {
+            "uri": "/amd/deepDependency/level5.js",
+            "type": "js",
+            "extras": {
+                "moduleId": "amd/deepDependency/level5"
+            }
+        },
+        "amd/deepDependency2/index.js": {
+            "uri": "/amd/deepDependency2/index.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/deepDependency2/level1": "amd/deepDependency2/level1.js",
+                    "amd/deepDependency2/level2": "amd/deepDependency2/level2.js"
+                },
+                "moduleId": "amd/deepDependency2/index"
+            },
+            "deps": [
+                "amd/deepDependency2/level1.js",
+                "amd/deepDependency2/level2.js"
+            ]
+        },
+        "amd/deepDependency2/level1.js": {
+            "uri": "/amd/deepDependency2/level1.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/deepDependency2/level3": "amd/deepDependency2/level3.js"
+                },
+                "moduleId": "amd/deepDependency2/level1"
+            },
+            "deps": [
+                "amd/deepDependency2/level3.js"
+            ]
+        },
+        "amd/deepDependency2/level2.js": {
+            "uri": "/amd/deepDependency2/level2.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/deepDependency2/level3": "amd/deepDependency2/level3.js"
+                },
+                "moduleId": "amd/deepDependency2/level2"
+            },
+            "deps": [
+                "amd/deepDependency2/level3.js"
+            ]
+        },
+        "amd/deepDependency2/level3.js": {
+            "uri": "/amd/deepDependency2/level3.js",
+            "type": "js",
+            "extras": {
+                "moduleId": "amd/deepDependency2/level3"
+            }
+        },
+        "amd/deepDependency3/a.js": {
+            "uri": "/amd/deepDependency3/a.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/deepDependency3/c": "amd/deepDependency3/c.js"
+                },
+                "moduleId": "amd/deepDependency3/a"
+            },
+            "deps": [
+                "amd/deepDependency3/c.js"
+            ]
+        },
+        "amd/deepDependency3/b.js": {
+            "uri": "/amd/deepDependency3/b.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/deepDependency3/a": "amd/deepDependency3/a.js",
+                    "amd/deepDependency3/d": "amd/deepDependency3/d.js",
+                    "amd/deepDependency3/e": "amd/deepDependency3/e.js"
+                },
+                "moduleId": "amd/deepDependency3/b"
+            },
+            "deps": [
+                "amd/deepDependency3/a.js",
+                "amd/deepDependency3/d.js",
+                "amd/deepDependency3/e.js"
+            ]
+        },
+        "amd/deepDependency3/c.js": {
+            "uri": "/amd/deepDependency3/c.js",
+            "type": "js",
+            "extras": {
+                "moduleId": "amd/deepDependency3/c"
+            }
+        },
+        "amd/deepDependency3/d.js": {
+            "uri": "/amd/deepDependency3/d.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/deepDependency3/c": "amd/deepDependency3/c.js",
+                    "amd/deepDependency3/e": "amd/deepDependency3/e.js"
+                },
+                "moduleId": "amd/deepDependency3/d"
+            },
+            "deps": [
+                "amd/deepDependency3/c.js",
+                "amd/deepDependency3/e.js"
+            ]
+        },
+        "amd/deepDependency3/e.js": {
+            "uri": "/amd/deepDependency3/e.js",
+            "type": "js",
+            "extras": {
+                "moduleId": "amd/deepDependency3/e"
+            }
+        },
+        "amd/deepDependency3/index.js": {
+            "uri": "/amd/deepDependency3/index.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/deepDependency3/b": "amd/deepDependency3/b.js"
+                },
+                "moduleId": "amd/deepDependency3/index"
+            },
+            "deps": [
+                "amd/deepDependency3/b.js"
+            ]
+        },
+        "amd/hardCircleDependency/a.js": {
+            "uri": "/amd/hardCircleDependency/a.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/hardCircleDependency/b": "amd/hardCircleDependency/b.js"
+                },
+                "moduleId": "amd/hardCircleDependency/a"
+            },
+            "deps": [
+                "amd/hardCircleDependency/b.js"
+            ]
+        },
+        "amd/hardCircleDependency/b.js": {
+            "uri": "/amd/hardCircleDependency/b.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/hardCircleDependency/a": "amd/hardCircleDependency/a.js"
+                },
+                "moduleId": "amd/hardCircleDependency/b"
+            },
+            "deps": [
+                "amd/hardCircleDependency/a.js"
+            ]
+        },
+        "amd/hardCircleDependency/index.js": {
+            "uri": "/amd/hardCircleDependency/index.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/hardCircleDependency/a": "amd/hardCircleDependency/a.js"
+                },
+                "moduleId": "amd/hardCircleDependency/index"
+            },
+            "deps": [
+                "amd/hardCircleDependency/a.js"
+            ]
+        },
+        "amd/innerDependency/cat.js": {
+            "uri": "/amd/innerDependency/cat.js",
+            "type": "js",
+            "extras": {
+                "moduleId": "amd/innerDependency/cat"
+            }
+        },
+        "amd/innerDependency/dog.js": {
+            "uri": "/amd/innerDependency/dog.js",
+            "type": "js",
+            "extras": {
+                "moduleId": "amd/innerDependency/dog"
+            }
+        },
+        "amd/innerDependency/index.js": {
+            "uri": "/amd/innerDependency/index.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/innerDependency/lion": "amd/innerDependency/lion.js",
+                    "amd/innerDependency/cat": "amd/innerDependency/cat.js",
+                    "amd/innerDependency/dog": "amd/innerDependency/dog.js",
+                    "amd/innerDependency/tiger": "amd/innerDependency/tiger.js"
+                },
+                "moduleId": "amd/innerDependency/index"
+            },
+            "deps": [
+                "amd/innerDependency/lion.js",
+                "amd/innerDependency/cat.js",
+                "amd/innerDependency/dog.js",
+                "amd/innerDependency/tiger.js"
+            ]
+        },
+        "amd/innerDependency/lion.js": {
+            "uri": "/amd/innerDependency/lion.js",
+            "type": "js",
+            "extras": {
+                "moduleId": "amd/innerDependency/lion"
+            }
+        },
+        "amd/innerDependency/tiger.js": {
+            "uri": "/amd/innerDependency/tiger.js",
+            "type": "js",
+            "extras": {
+                "moduleId": "amd/innerDependency/tiger"
+            }
+        },
+        "amd/innerRelativeDependency/cat.js": {
+            "uri": "/amd/innerRelativeDependency/cat.js",
+            "type": "js",
+            "extras": {
+                "moduleId": "amd/innerRelativeDependency/cat"
+            }
+        },
+        "amd/innerRelativeDependency/dog.js": {
+            "uri": "/amd/innerRelativeDependency/dog.js",
+            "type": "js",
+            "extras": {
+                "moduleId": "amd/innerRelativeDependency/dog"
+            }
+        },
+        "amd/innerRelativeDependency/index.js": {
+            "uri": "/amd/innerRelativeDependency/index.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/innerRelativeDependency/lion": "amd/innerRelativeDependency/lion.js",
+                    "amd/innerRelativeDependency/cat": "amd/innerRelativeDependency/cat.js",
+                    "amd/innerRelativeDependency/dog": "amd/innerRelativeDependency/dog.js",
+                    "amd/innerRelativeDependency/tiger": "amd/innerRelativeDependency/tiger.js"
+                },
+                "moduleId": "amd/innerRelativeDependency/index"
+            },
+            "deps": [
+                "amd/innerRelativeDependency/lion.js",
+                "amd/innerRelativeDependency/cat.js",
+                "amd/innerRelativeDependency/dog.js",
+                "amd/innerRelativeDependency/tiger.js"
+            ]
+        },
+        "amd/innerRelativeDependency/lion.js": {
+            "uri": "/amd/innerRelativeDependency/lion.js",
+            "type": "js",
+            "extras": {
+                "moduleId": "amd/innerRelativeDependency/lion"
+            }
+        },
+        "amd/innerRelativeDependency/tiger.js": {
+            "uri": "/amd/innerRelativeDependency/tiger.js",
+            "type": "js",
+            "extras": {
+                "moduleId": "amd/innerRelativeDependency/tiger"
+            }
+        },
+        "amd/lazyDefine/index.js": {
+            "uri": "/amd/lazyDefine/index.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/lazyDefine/sea": "amd/lazyDefine/sea.js"
+                },
+                "moduleId": "amd/lazyDefine/index"
+            },
+            "deps": [
+                "amd/lazyDefine/sea.js"
+            ]
+        },
+        "amd/lazyDefine/sea.js": {
+            "uri": "/amd/lazyDefine/sea.js",
+            "type": "js",
+            "extras": {
+                "moduleId": "amd/lazyDefine/sea"
+            }
+        },
+        "amd/manyDependencies/cat.js": {
+            "uri": "/amd/manyDependencies/cat.js",
+            "type": "js",
+            "extras": {
+                "moduleId": "amd/manyDependencies/cat"
+            }
+        },
+        "amd/manyDependencies/dog.js": {
+            "uri": "/amd/manyDependencies/dog.js",
+            "type": "js",
+            "extras": {
+                "moduleId": "amd/manyDependencies/dog"
+            }
+        },
+        "amd/manyDependencies/index.js": {
+            "uri": "/amd/manyDependencies/index.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/manyDependencies/cat": "amd/manyDependencies/cat.js",
+                    "amd/manyDependencies/dog": "amd/manyDependencies/dog.js",
+                    "amd/manyDependencies/tiger": "amd/manyDependencies/tiger.js",
+                    "amd/manyDependencies/lion": "amd/manyDependencies/lion.js"
+                },
+                "moduleId": "amd/manyDependencies/index"
+            },
+            "deps": [
+                "amd/manyDependencies/cat.js",
+                "amd/manyDependencies/dog.js",
+                "amd/manyDependencies/tiger.js",
+                "amd/manyDependencies/lion.js"
+            ]
+        },
+        "amd/manyDependencies/lion.js": {
+            "uri": "/amd/manyDependencies/lion.js",
+            "type": "js",
+            "extras": {
+                "moduleId": "amd/manyDependencies/lion"
+            }
+        },
+        "amd/manyDependencies/tiger.js": {
+            "uri": "/amd/manyDependencies/tiger.js",
+            "type": "js",
+            "extras": {
+                "moduleId": "amd/manyDependencies/tiger"
+            }
+        },
+        "amd/noDefineId/index.js": {
+            "uri": "/amd/noDefineId/index.js",
+            "type": "js",
+            "extras": {
+                "moduleId": "amd/noDefineId/index"
+            }
+        },
+        "amd/objectFactory/index.js": {
+            "uri": "/amd/objectFactory/index.js",
+            "type": "js",
+            "extras": {
+                "moduleId": "amd/objectFactory/index"
+            }
+        },
+        "amd/relativeDependency/dog.js": {
+            "uri": "/amd/relativeDependency/dog.js",
+            "type": "js",
+            "extras": {
+                "moduleId": "amd/relativeDependency/dog"
+            }
+        },
+        "amd/relativeDependency/index.js": {
+            "uri": "/amd/relativeDependency/index.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/relativeDependency/inner/cat": "amd/relativeDependency/inner/cat.js"
+                },
+                "moduleId": "amd/relativeDependency/index"
+            },
+            "deps": [
+                "amd/relativeDependency/inner/cat.js"
+            ]
+        },
+        "amd/relativeDependency/inner/cat.js": {
+            "uri": "/amd/relativeDependency/inner/cat.js",
+            "type": "js",
+            "extras": {
+                "moduleId": "amd/relativeDependency/inner/cat"
+            }
+        },
+        "amd/simple/index.js": {
+            "uri": "/amd/simple/index.js",
+            "type": "js",
+            "extras": {
+                "moduleId": "amd/simple/index"
+            }
+        },
+        "amd/simpleCircleDependency/b.js": {
+            "uri": "/amd/simpleCircleDependency/b.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/simpleCircleDependency/c": "amd/simpleCircleDependency/c.js"
+                },
+                "moduleId": "amd/simpleCircleDependency/b"
+            },
+            "deps": [
+                "amd/simpleCircleDependency/c.js"
+            ]
+        },
+        "amd/simpleCircleDependency/c.js": {
+            "uri": "/amd/simpleCircleDependency/c.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/simpleCircleDependency/index": "amd/simpleCircleDependency/index.js"
+                },
+                "moduleId": "amd/simpleCircleDependency/c"
+            },
+            "deps": [
+                "amd/simpleCircleDependency/index.js"
+            ]
+        },
+        "amd/simpleCircleDependency/index.js": {
+            "uri": "/amd/simpleCircleDependency/index.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/simpleCircleDependency/b": "amd/simpleCircleDependency/b.js"
+                },
+                "moduleId": "amd/simpleCircleDependency/index"
+            },
+            "deps": [
+                "amd/simpleCircleDependency/b.js"
+            ]
+        },
+        "amd/simpleCircleDependency2/b.js": {
+            "uri": "/amd/simpleCircleDependency2/b.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/simpleCircleDependency2/c": "amd/simpleCircleDependency2/c.js"
+                },
+                "moduleId": "amd/simpleCircleDependency2/b"
+            },
+            "deps": [
+                "amd/simpleCircleDependency2/c.js"
+            ]
+        },
+        "amd/simpleCircleDependency2/c.js": {
+            "uri": "/amd/simpleCircleDependency2/c.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/simpleCircleDependency2/index": "amd/simpleCircleDependency2/index.js"
+                },
+                "moduleId": "amd/simpleCircleDependency2/c"
+            },
+            "deps": [
+                "amd/simpleCircleDependency2/index.js"
+            ]
+        },
+        "amd/simpleCircleDependency2/index.js": {
+            "uri": "/amd/simpleCircleDependency2/index.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/simpleCircleDependency2/b": "amd/simpleCircleDependency2/b.js"
+                },
+                "moduleId": "amd/simpleCircleDependency2/index"
+            },
+            "deps": [
+                "amd/simpleCircleDependency2/b.js"
+            ]
+        },
+        "amd/simpleCircleDependency3/b.js": {
+            "uri": "/amd/simpleCircleDependency3/b.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/simpleCircleDependency3/c": "amd/simpleCircleDependency3/c.js"
+                },
+                "moduleId": "amd/simpleCircleDependency3/b"
+            },
+            "deps": [
+                "amd/simpleCircleDependency3/c.js"
+            ]
+        },
+        "amd/simpleCircleDependency3/c.js": {
+            "uri": "/amd/simpleCircleDependency3/c.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/simpleCircleDependency3/index": "amd/simpleCircleDependency3/index.js"
+                },
+                "moduleId": "amd/simpleCircleDependency3/c"
+            },
+            "deps": [
+                "amd/simpleCircleDependency3/index.js"
+            ]
+        },
+        "amd/simpleCircleDependency3/index.js": {
+            "uri": "/amd/simpleCircleDependency3/index.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/simpleCircleDependency3/b": "amd/simpleCircleDependency3/b.js"
+                },
+                "moduleId": "amd/simpleCircleDependency3/index"
+            },
+            "deps": [
+                "amd/simpleCircleDependency3/b.js"
+            ]
+        },
+        "amd/simpleDependency/cat.js": {
+            "uri": "/amd/simpleDependency/cat.js",
+            "type": "js",
+            "extras": {
+                "moduleId": "amd/simpleDependency/cat"
+            }
+        },
+        "amd/simpleDependency/index.js": {
+            "uri": "/amd/simpleDependency/index.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "amd/simpleDependency/cat": "amd/simpleDependency/cat.js"
+                },
+                "moduleId": "amd/simpleDependency/index"
+            },
+            "deps": [
+                "amd/simpleDependency/cat.js"
+            ]
+        }
+    },
+    "pkg": {}
+}
