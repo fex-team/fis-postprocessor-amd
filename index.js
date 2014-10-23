@@ -621,23 +621,37 @@ parser.parseHtml = function(content, file, conf) {
 };
 
 parser.parseJs = function(content, file, conf) {
-    var modules = lib.getAMDModules(content);
-    var inserts = [];
-    var converter, requires;
 
-
-    // 检测 shim
-    if (!modules.length && conf.shim[file.subpath]) {
-        content = wrapAMD(content, file, conf, conf.shim[file.subpath]);
-        modules = lib.getAMDModules(content);
-    } else if (!modules.length && !file.isHtmlLike && (typeof file.useAMDWrap === 'undefined' ? (file.isMod || conf.wrapAll) : file.useAMDWrap)) {
-
-        // 没找到 amd 定义, 则需要包装
-
-        content = wrapAMD(content, file, conf);
-        modules = lib.getAMDModules(content);
+    // 很可能是语法解析错误，不应该中断。
+    try {
+        content = _parseJs(content, file, conf);
+    } catch (e) {
+        fis.log.warning(e.message);
     }
 
+    return content;
+};
+
+
+function _parseJs(content, file, conf) {
+    var hasDefined = /\bdefine\s*\(/i.exec(content);
+    var inserts = [];
+    var modules, converter, requires;
+
+    // 能用正则检测出来，那就先用正则检测把，语法分析，耗时太长
+    if (!hasDefined || (modules = lib.getAMDModules(content), !modules.length)) {
+        if (conf.shim[file.subpath]) {
+            content = wrapAMD(content, file, conf, conf.shim[file.subpath]);
+            modules = lib.getAMDModules(content);
+        } else if (!file.isHtmlLike && (typeof file.useAMDWrap === 'undefined' ? (file.isMod || conf.wrapAll) : file.useAMDWrap)) {
+            // 没找到 amd 定义, 则需要包装
+
+            content = wrapAMD(content, file, conf);
+            modules = lib.getAMDModules(content);
+        }
+    }
+
+    modules = modules || lib.getAMDModules(content);
     converter = getConverter(content);
 
     file._anonymousDefineCount = file._anonymousDefineCount || 0;
@@ -1002,4 +1016,4 @@ parser.parseJs = function(content, file, conf) {
     }
 
     return content;
-};
+}
