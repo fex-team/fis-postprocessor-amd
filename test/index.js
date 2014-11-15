@@ -316,6 +316,26 @@ describe('AMD TEST', function() {
         });
     });
 });
+
+describe('Compatible', function() {
+    this.timeout(15000);
+
+    it('amd test', function(done) {
+        Fis.run('-r', resolve('fixtures/compatible'), '-f', resolve('fixtures/compatible/fis-conf.js'), function(path) {
+            // console.log(path);
+            compareFolder(resolve('expected/compatible'), path, function(name, src, dst) {
+                if (typeof src === 'undefined') {
+                    assert.ok(false, name + ' file not match');
+                } else {
+                    assert.ok(src === dst, name + ' content not match');
+                }
+            });
+            fis.util.del(path);
+            done();
+        });
+    });
+});
+
 // 收尾输出 coverage
 describe('finish', function() {
     it('ignore this', function(callback) {

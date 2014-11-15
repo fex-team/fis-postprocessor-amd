@@ -1,0 +1,25 @@
+{
+    "res": {
+        "test1.js": {
+            "uri": "/test1.js",
+            "type": "js",
+            "extras": {
+                "moduleId": "test1"
+            }
+        },
+        "test2.js": {
+            "uri": "/test2.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "test1": "test1.js"
+                },
+                "moduleId": "test2"
+            },
+            "deps": [
+                "test1.js"
+            ]
+        }
+    },
+    "pkg": {}
+}

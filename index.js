@@ -1022,6 +1022,10 @@ function _parseJs(content, file, conf) {
 
     content = bulkReplace(content, inserts);
 
+    // 兼容性替换
+    content = content.replace(/\brequire\.async\s*\(\s*('|")(.*?)\1/, 'require([$1$2$1]');
+    content = content.replace(/\brequire\.async\s*\(\s*\[/, 'require([');
+
     return content;
 }
 
