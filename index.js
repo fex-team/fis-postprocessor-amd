@@ -8,7 +8,7 @@
  * 3. 添加同步和异步依赖到 map.json 文件里面。
  * 4. 依赖前置
  */
-var lib = require('./lib/');
+var getInfo = require('./lib/info.js');
 var pth = require('path');
 var map;
 
@@ -181,7 +181,7 @@ parser.defaultOptions = {
     // module id 模板
     moduleIdTpl: function(file) {
         var ns = fis.config.get('namespace');
-        var id = (file.release || file.subpath).replace(/^\//, '').replace(/\.js$/, '');
+        var id = file.subpath.replace(/^\//, '').replace(/\.js$/, '');
 
         return ns ? (ns + ':' + id) : id;
     },
@@ -245,7 +245,7 @@ function getModuleId(ref, file, conf, modulename) {
     // ref 为用户指定的 module id 原始值
     if (ref) {
         if (ref[0] !== '.' && ref[0] !== '/' && map.get(ref)) {
-            // 如果为非绝对路径且不会相对路径，则看看这个 module id 是否已经定义过。
+            // 非相对路径且非绝对路径，则看看这个 module id 是否已经定义过。
             // 如果定义过，则保留不变。
             return ref;
         } else if (modulename && (key = pth.join(pth.dirname(modulename), ref)) && map.get(key)) {
@@ -336,6 +336,7 @@ function isEmptyObject(obj) {
     return true;
 }
 
+// 查找 conf.packages 是否有对应的定义。
 function findPkg(pkg, list) {
     var i = 0;
     var len = list.length;
@@ -398,6 +399,7 @@ function resolveModuleId(id, file, conf, modulename) {
     } else if (id[0] === '.') {
 
         // 先相对与当前定义的模块定位。
+        // 很可能多个 module 在一个文件里面定义的。
         if (modulename) {
             resolved = pth.join(pth.dirname(modulename), id);
 
@@ -406,6 +408,7 @@ function resolveModuleId(id, file, conf, modulename) {
             }
         }
 
+        // 没找到，再来看当前文件夹下有没有这个文件。
         if (!info || !info.file) {
             // 相对路径
             info = fis.uri(id, dirname);
@@ -413,6 +416,7 @@ function resolveModuleId(id, file, conf, modulename) {
         }
 
         // combine 模式
+        // 看看当前文件里面已经有没有定义了的 module
         if (!info.file && (sibling = getKeyByValue(map.get(), file.subpath))) {
             id = pth.join(sibling.replace(/(\/|\\)[^\/\\]+$/, ''), id);
 
@@ -428,7 +432,7 @@ function resolveModuleId(id, file, conf, modulename) {
         info = fis.uri(id, baseUrl);
         info.file || (info = fis.uri(id + '.js', baseUrl));
 
-        // 然后再试试 root 目录下面
+        // baseUrl 里面没有，还是再看看项目根目录里面有没有。
         if (!info.file) {
             info = fis.uri(id, root);
             info.file || (info = fis.uri(id + '.js', root));
@@ -632,376 +636,340 @@ parser.parseJs = function(content, file, conf) {
     return content;
 };
 
-
 function _parseJs(content, file, conf) {
-    var hasDefined = /\bdefine\s*\(/i.exec(content);
-    var inserts = [];
-    var modules, converter, requires;
+    var hasDefined = /(?:^|\s)define\s*\(/i.exec(content);
+    var info;
 
     // 能用正则检测出来，那就先用正则检测把，语法分析，耗时太长
-    if (!hasDefined || (modules = lib.getAMDModules(content), !modules.length)) {
+    if (!hasDefined || (info = getInfo(content), !info.modules || !info.modules.length)) {
+
         if (conf.shim[file.subpath]) {
             content = wrapAMD(content, file, conf, conf.shim[file.subpath]);
-            modules = lib.getAMDModules(content);
+
+            // 重新获取信息。
+            info = getInfo(content);
         } else if (!file.isHtmlLike && (typeof file.useAMDWrap === 'undefined' ? (file.isMod || conf.wrapAll) : file.useAMDWrap)) {
             // 没找到 amd 定义, 则需要包装
 
             content = wrapAMD(content, file, conf);
-            modules = lib.getAMDModules(content);
+
+            // 重新获取信息。
+            info = getInfo(content);
         }
     }
 
-    modules = modules || lib.getAMDModules(content);
-    converter = getConverter(content);
+    info = info || getInfo(content);
 
-    file._anonymousDefineCount = file._anonymousDefineCount || 0;
+    // 先把所有自己指定了 id 的 module 跟文件路径关联起来。
+    // 后面查找的时候有用。
+    var affected = false;
+    travel(info, function(node) {
+        var module = node.module;
 
-    // 提前先把所有带 module id 的module 标记下来。
-    modules.forEach(function(module) {
-        if (!module.id) {
-            return;
-        }
-
-        if (map.get(module.id) !== file.subpath) {
-            map.set(module.id, file.subpath);
-            map.save();
+        if (module && module.id) {
+            if (map.get(module.id) !== file.subpath) {
+                map.set(module.id, file.subpath);
+                affected = true;
+            }
         }
     });
+    affected && map.save();
 
-    // 编译所有模块定义列表
-    modules.forEach(function(module) {
-        var argsRaw = [];   // factory 处理前的形参列表。
-        var deps = [];  // 最终依赖列表
-        var args = [];  // 最终 factory 的形参列表
-        var moduleId, start, end, params;
+    // 开始一系列替换。
+    var inserts = [];
+    var converter = getConverter(content);
 
-        // 获取处理前的原始形参
-        params = module.factory.params;
-        params && params.forEach(function(param) {
-            argsRaw.push(param.name);
-        });
+    var asyncRequires = [];
+    var globalSyncRequires = [];
 
-        // deps 是指 define 的第二个参数中指定的依赖列表。
-        if (module.deps && module.deps.length) {
+    travel(info, function(node, isRoot) {
+        var module = node.module;
 
-            // 添加依赖。
-            module.deps.forEach(function(elem) {
-                var v = elem.raw;
-                var info = fis.util.stringQuote(v);
-                var target, moduleId, argname;
+        // 处理模块定义中的替换。
+        if (module) {
+            var argsRaw = [];   // factory 处理前的形参列表。
+            var deps = [];  // 最终依赖列表
+            var args = [];  // 最终 factory 的形参列表
+            var moduleId, start, end, params;
 
-                v = elem.value;
+            // 获取处理前的原始形参
+            params = module.factory.params;
+            params && params.forEach(function(param) {
+                argsRaw.push(param.name);
+            });
 
-                // 不需要查找依赖，如果是 require、module、或者 exports.
-                if (~'require,module,exports'.indexOf(v)) {
-                    deps.push(elem.raw);
-                    args.push(argsRaw.shift());
+            // deps 是指 define 的第二个参数中指定的依赖列表。
+            if (module.deps && module.deps.length) {
+
+                // 添加依赖。
+                module.deps.forEach(function(elem) {
+                    var v = elem.raw;
+                    var info = fis.util.stringQuote(v);
+                    var target, moduleId, argname;
+
+                    v = elem.value;
+
+                    // 不需要查找依赖，如果是 require、module、或者 exports.
+                    if (~'require,module,exports'.indexOf(v)) {
+                        deps.push(elem.raw);
+                        args.push(argsRaw.shift());
+                        return;
+                    }
+
+                    target = resolveModuleId(v, file, conf, module.id);
+
+                    if (target && target.file) {
+                        file.addRequire(target.file.id);
+                        compileFile(target.file);
+                        moduleId = getModuleId(v, target.file, conf, module.id);
+
+                        file.extras.paths[moduleId] = target.file.id;
+
+                        deps.push(info.quote + moduleId + info.quote);
+                        argname = argsRaw.shift();
+                        argname && args.push(argname);
+                    } else if (target && target.isFisId) {
+                        file.addRequire(target.path);
+                        moduleId = target.path.replace(/\.js$/, '');
+                        file.extras.paths[moduleId] = target.path;
+
+                        deps.push(moduleId);
+                        argname = argsRaw.shift();
+                        argname && args.push(argname);
+                    } else {
+
+                        deps.push(elem.raw);
+                        argname = argsRaw.shift();
+                        argname && args.push(argname);
+
+                        fis.log.warning('Can not find module `' + v + '` in [' + file.subpath + ']');
+                    }
+                });
+            }
+            //  没有指定的话，原来 factory 里面参数放回去。
+            else {
+                args = argsRaw.concat();
+            }
+
+            if (file.subpath === '/amd/deepDependency/level3.js') {
+                debugger;
+            }
+
+
+            // module 中的 require(string) 列表。
+            if (node.requires && node.requires.length) {
+                node.requires.forEach(function(item) {
+                    var elem = item.node.arguments[0];
+                    var v = elem.value;
+                    var info = fis.util.stringQuote(elem.raw);
+                    var target, moduleId, val, start, end;
+
+                    target = resolveModuleId(v, file, conf, module.id);
+
+                    if (target && target.file) {
+                        file.removeRequire(v);
+                        file.addRequire(target.file.id);
+                        compileFile(target.file);
+                        moduleId = getModuleId(v, target.file, conf, module.id );
+                        file.extras.paths[moduleId] = target.file.id;
+
+                        start = converter(elem.loc.start.line, elem.loc.start.column);
+                        inserts.push({
+                            start: start,
+                            len: elem.raw.length,
+                            content: info.quote + moduleId + info.quote
+                        });
+
+                        // 非依赖前置
+                        if (!conf.forwardDeclaration) {
+                            return;
+                        }
+                    } else if (target && target.isFisId) {
+                        file.removeRequire(v);
+                        file.addRequire(target.path);
+                        moduleId = target.path.replace(/\.js$/, '');
+                        file.extras.paths[moduleId] = target.path;
+
+                        start = converter(elem.loc.start.line, elem.loc.start.column);
+                        inserts.push({
+                            start: start,
+                            len: elem.raw.length,
+                            content: info.quote + moduleId + info.quote
+                        });
+
+                        // 非依赖前置
+                        if (!conf.forwardDeclaration) {
+                            return;
+                        }
+                    } else {
+                        fis.log.warning('Can not find module `' + v + '` in [' + file.subpath + ']');
+                        moduleId = v;
+                    }
+
+                    deps.push(info.quote + moduleId + info.quote);
+                });
+
+                if (conf.forwardDeclaration) {
+
+                    if (!args.length) {
+                        args.push('require');
+                    }
+
+                    if (args[0] === 'require' && deps[0].substring(1, 8) !== 'require') {
+                        deps.unshift('\'require\'');
+                    }
+
+                    if (args[1] === 'exports' && deps[1].substring(1, 8) !== 'exports') {
+                        deps.splice(1, 0, '\'exports\'');
+                    }
+
+                    if (args[2] === 'module' && deps[2].substring(1, 7) !== 'module') {
+                        deps.splice(2, 0, '\'module\'');
+                    }
+                }
+            }
+
+            // 替换 factory args.
+            if (args.length && params) {
+                if (params.length) {
+                    start = converter(params[0].loc.start.line, params[0].loc.start.column);
+                    end = converter(params[params.length - 1].loc.end.line, params[params.length - 1].loc.end.column);
+                } else {
+                    start = converter(module.factory.loc.start.line, module.factory.loc.start.column);
+                    end = converter(module.factory.loc.end.line, module.factory.loc.end.column);
+                    start += /^function[^\(]*\(/i.exec(content.substring(start, end))[0].length;
+                    end = start;
+                }
+
+                inserts.push({
+                    start: start,
+                    len: end - start,
+                    content: args.join(', ')
+                });
+            }
+
+            // 替换 deps
+            if (deps.length) {
+                start = converter(module.depsLoc.start.line, module.depsLoc.start.column);
+                end = converter(module.depsLoc.end.line, module.depsLoc.end.column);
+
+                deps = deps.filter(function(elem, pos, thearr) {
+                    return args[pos] || thearr.indexOf(elem) === pos;
+                });
+
+                inserts.push({
+                    start: start,
+                    len: end - start,
+                    content: '[' + deps.join(', ') + ']' + (module.deps ? '' : ',')
+                });
+            }
+
+            // 添加 module id
+            if (!module.id) {
+
+                if (file._anonymousDefineCount) {
+                    fis.log.error('The file has more than one anonymous ' +
+                            'define');
                     return;
                 }
 
-                target = resolveModuleId(v, file, conf, module.id);
+                module.id = moduleId = getModuleId('', file, conf);
+                file.extras.moduleId = file.extras.moduleId || moduleId;
+                start = module.node.loc.start;
+                start = converter(start.line, start.column);
+                start += /^define\s*\(/.exec(content.substring(start))[0].length;
 
-                if (target && target.file) {
-                    file.addRequire(target.file.id);
-                    compileFile(target.file);
-                    moduleId = getModuleId(v, target.file, conf, module.id);
-
-                    file.extras.paths[moduleId] = target.file.id;
-
-                    deps.push(info.quote + moduleId + info.quote);
-                    argname = argsRaw.shift();
-                    argname && args.push(argname);
-                } else if (target && target.isFisId) {
-                    file.addRequire(target.path);
-                    moduleId = target.path.replace(/\.js$/, '');
-                    file.extras.paths[moduleId] = target.path;
-
-                    deps.push(moduleId);
-                    argname = argsRaw.shift();
-                    argname && args.push(argname);
-                } else {
-
-                    deps.push(elem.raw);
-                    argname = argsRaw.shift();
-                    argname && args.push(argname);
-
-                    fis.log.warning('Can not find module `' + v + '` in [' + file.subpath + ']');
-                }
-            });
-        } else {
-            args = argsRaw.concat();
-        }
-
-        // module 中的 require(string) 列表。
-        if (module.syncRequires && module.syncRequires.length) {
-
-            module.syncRequires.forEach(function(item) {
-                var elem = item.node.arguments[0];
-                var v = elem.value;
-                var info = fis.util.stringQuote(elem.raw);
-                var target, moduleId, val, start, end;
-
-                target = resolveModuleId(v, file, conf, module.id);
-
-                if (target && target.file) {
-                    file.removeRequire(v);
-                    file.addRequire(target.file.id);
-                    compileFile(target.file);
-                    moduleId = getModuleId(v, target.file, conf, module.id );
-                    file.extras.paths[moduleId] = target.file.id;
-
-                    start = converter(elem.loc.start.line, elem.loc.start.column);
-                    inserts.push({
-                        start: start,
-                        len: elem.raw.length,
-                        content: info.quote + moduleId + info.quote
-                    });
-
-                    // 非依赖前置
-                    if (!conf.forwardDeclaration) {
-                        return;
-                    }
-                } else if (target && target.isFisId) {
-                    file.removeRequire(v);
-                    file.addRequire(target.path);
-                    moduleId = target.path.replace(/\.js$/, '');
-                    file.extras.paths[moduleId] = target.path;
-
-                    start = converter(elem.loc.start.line, elem.loc.start.column);
-                    inserts.push({
-                        start: start,
-                        len: elem.raw.length,
-                        content: info.quote + moduleId + info.quote
-                    });
-
-                    // 非依赖前置
-                    if (!conf.forwardDeclaration) {
-                        return;
-                    }
-                } else {
-                    fis.log.warning('Can not find module `' + v + '` in [' + file.subpath + ']');
-                    moduleId = v;
-                }
-
-                deps.push(info.quote + moduleId + info.quote);
-            });
-
-            // define(function(require) {
-            //      var a = require('a');
-            //      var b = require('b');
-            // });
-            //
-            // define(['require', 'exports', 'module'], function(require, exports) {
-            //      var a = require('a');
-            //      var b = require('b');
-            // });
-            //
-            if (conf.forwardDeclaration) {
-
-                if (!args.length) {
-                    args.push('require');
-                }
-
-                if (args[0] === 'require' && deps[0].substring(1, 8) !== 'require') {
-                    deps.unshift('\'require\'');
-                }
-
-                if (args[1] === 'exports' && deps[1].substring(1, 8) !== 'exports') {
-                    deps.splice(1, 0, '\'exports\'');
-                }
-
-                if (args[2] === 'module' && deps[2].substring(1, 7) !== 'module') {
-                    deps.splice(2, 0, '\'module\'');
-                }
-            }
-        }
-
-        // 替换 factory args.
-        if (args.length) {
-            if (params.length) {
-                start = converter(params[0].loc.start.line, params[0].loc.start.column);
-                end = converter(params[params.length - 1].loc.end.line, params[params.length - 1].loc.end.column);
+                inserts.push({
+                    start: start,
+                    len: 0,
+                    content: '\''+moduleId+'\', '
+                });
+                file._anonymousDefineCount++;
             } else {
-                start = converter(module.factory.loc.start.line, module.factory.loc.start.column);
-                end = converter(module.factory.loc.end.line, module.factory.loc.end.column);
-                start += /^function[^\(]*\(/i.exec(content.substring(start, end))[0].length;
-                end = start;
+                file.extras.moduleId = module.id;
             }
 
-            inserts.push({
-                start: start,
-                len: end - start,
-                content: args.join(', ')
-            });
+            if (node.asyncRequires && node.asyncRequires.length) {
+                node.asyncRequires.forEach(function(req) {
+                    req.markAsync = true;
+                    asyncRequires.push(req);
+                });
+            }
         }
 
-        // 替换 deps
-        if (deps.length) {
-            start = converter(module.depsLoc.start.line, module.depsLoc.start.column);
-            end = converter(module.depsLoc.end.line, module.depsLoc.end.column);
-
-            deps = deps.filter(function(elem, pos, thearr) {
-                return args[pos] || thearr.indexOf(elem) === pos;
-            });
-
-            inserts.push({
-                start: start,
-                len: end - start,
-                content: '[' + deps.join(', ') + ']' + (module.deps ? '' : ',')
-            });
-        }
-
-        // 添加 module id
-        if (!module.id) {
-
-            if (file._anonymousDefineCount) {
-                fis.log.error('The file has more than one anonymous ' +
-                        'define');
-                return;
+        // 处理全局 require 和 require.async
+        else {
+            if (node.asyncRequires && node.asyncRequires.length) {
+                [].push.apply(asyncRequires, node.asyncRequires);
             }
 
-            module.id = moduleId = getModuleId('', file, conf);
-            start = module.node.loc.start;
-            start = converter(start.line, start.column);
-            start += /^define\s*\(/.exec(content.substring(start))[0].length;
-
-            inserts.push({
-                start: start,
-                len: 0,
-                content: '\''+moduleId+'\', '
-            });
-            file._anonymousDefineCount++;
-        } else {
-            file.extras.moduleId = module.id;
+            if (node.requires && node.requires) {
+                node.requires.forEach(function(req) {
+                    if (!req.isLocal) {
+                        globalSyncRequires.push(req);
+                    }
+                });
+            }
         }
     });
 
+    asyncRequires.forEach(function(req) {
+        // 只有在模块中的异步才被认为是异步？
+        // 因为在 define 外面，没有这样的用法： var lib = require('string');
+        // 所以不存在同步用法，也就无法把同步依赖提前加载进来。
+        // 为了实现提前加载依赖来提高性能，我们把global下的异步依赖认为是同步的。
+        //
+        // 当然这里有个总开关，可以通过设置 `globalAsyncAsSync` 为 false 来关闭此功能。
+        // 另外可以在 require 异步用法的语句前面加上 require async 的注释来，标记异步。
+        var async = !conf.globalAsyncAsSync || req.markAsync;
 
-    if (modules.length) {
-        file.extras.moduleId = file.extras.moduleId || modules[0].id;
-    }
+        (req.deps || []).forEach(function(elem) {
+            var v = elem.raw;
+            var info = fis.util.stringQuote(v);
+            var target, start, moduleId;
 
-    content = bulkReplace(content, inserts);
-    inserts = [];
-
-    // 获取文件中异步 require
-    // require([xxx], callback);
-    // try {
-        requires = lib.getAsyncRequires(content);
-    // } catch (err) {
-    //     console.log(file.subpath, content);
-    // }
-
-
-    if (requires.length) {
-        converter = getConverter(content);
-
-        requires.forEach(function(req) {
-
-            // 只有在模块中的异步才被认为是异步？
-            // 因为在 define 外面，没有这样的用法： var lib = require('string');
-            // 所以不存在同步用法，也就无法把同步依赖提前加载进来。
-            // 为了实现提前加载依赖来提高性能，我们把global下的异步依赖认为是同步的。
-            //
-            // 当然这里有个总开关，可以通过设置 `globalAsyncAsSync` 为 false 来关闭此功能。
-            var async = !conf.globalAsyncAsSync || req.isInModule || req.markAsync;
-
-            (req.deps || []).forEach(function(elem) {
-                var v = elem.raw;
-                var info = fis.util.stringQuote(v);
-                var target, start, moduleId;
-
-                v = info.rest.trim();
-                target = resolveModuleId(v, file, conf, elem.id);
-
-                if (target && target.file) {
-                    compileFile(target.file);
-                    moduleId = getModuleId(v, target.file, conf, elem.id);
-
-                    if (async) {
-                        if (!~file.extras.async.indexOf(target.file.id) && !~file.requires.indexOf(target.file.id)) {
-                            file.extras.async.push(target.file.id);
-                        }
-                    } else {
-                        file.addRequire(target.file.id);
-                    }
-
-                    file.extras.paths[moduleId] = target.file.id;
-
-                    start = elem.loc.start;
-                    start = converter(start.line, start.column);
-
-                    inserts.push({
-                        start: start,
-                        len: elem.raw.length,
-                        content: info.quote + moduleId + info.quote
-                    });
-
-                } else if (target && target.isFisId) {
-                    moduleId = target.path.replace(/\.js/, '');
-
-                    if (async) {
-                        if (!~file.extras.async.indexOf(target.path) && !~file.requires.indexOf(target.path)) {
-                            file.extras.async.push(target.path);
-                        }
-                    } else {
-                        file.addRequire(target.path);
-                    }
-
-                    file.extras.paths[moduleId] = target.path;
-
-                    start = elem.loc.start;
-                    start = converter(start.line, start.column);
-
-                    inserts.push({
-                        start: start,
-                        len: elem.raw.length,
-                        content: info.quote + moduleId + info.quote
-                    });
-                } else {
-                    fis.log.warning('Can not find module `' + v + '` in [' + file.subpath + ']');
-                }
-            });
-
-        });
-
-        content = bulkReplace(content, inserts);
-    }
-
-    // 为了兼容老的用法
-    requires = lib.getGlobalSyncRequires(content);
-    inserts = [];
-    if (requires.length) {
-        converter = getConverter(content);
-
-        requires.forEach(function(item) {
-            var elem = item.node.arguments[0];
-            var v = elem.value;
-            var info = fis.util.stringQuote(elem.raw);
-            var target, moduleId, val, start, end;
-
-            target = resolveModuleId(v, file, conf);
+            v = info.rest.trim();
+            target = resolveModuleId(v, file, conf, elem.id);
 
             if (target && target.file) {
-                file.removeRequire(v);
-                file.addRequire(target.file.id);
                 compileFile(target.file);
-                moduleId = getModuleId(v, target.file, conf);
+                moduleId = getModuleId(v, target.file, conf, elem.id);
+
+                if (async) {
+                    if (!~file.extras.async.indexOf(target.file.id) && !~file.requires.indexOf(target.file.id)) {
+                        file.extras.async.push(target.file.id);
+                    }
+                } else {
+                    file.addRequire(target.file.id);
+                }
+
                 file.extras.paths[moduleId] = target.file.id;
 
-                start = converter(elem.loc.start.line, elem.loc.start.column);
+                start = elem.loc.start;
+                start = converter(start.line, start.column);
+
                 inserts.push({
                     start: start,
                     len: elem.raw.length,
                     content: info.quote + moduleId + info.quote
                 });
+
             } else if (target && target.isFisId) {
-                file.removeRequire(v);
-                file.addRequire(target.path);
                 moduleId = target.path.replace(/\.js/, '');
+
+                if (async) {
+                    if (!~file.extras.async.indexOf(target.path) && !~file.requires.indexOf(target.path)) {
+                        file.extras.async.push(target.path);
+                    }
+                } else {
+                    file.addRequire(target.path);
+                }
+
                 file.extras.paths[moduleId] = target.path;
 
-                start = converter(elem.loc.start.line, elem.loc.start.column);
+                start = elem.loc.start;
+                start = converter(start.line, start.column);
+
                 inserts.push({
                     start: start,
                     len: elem.raw.length,
@@ -1011,9 +979,58 @@ function _parseJs(content, file, conf) {
                 fis.log.warning('Can not find module `' + v + '` in [' + file.subpath + ']');
             }
         });
+    });
 
-        content = bulkReplace(content, inserts);
-    }
+    // 兼容老用法。
+    globalSyncRequires.forEach(function(item) {
+        var elem = item.node.arguments[0];
+        var v = elem.value;
+        var info = fis.util.stringQuote(elem.raw);
+        var target, moduleId, val, start, end;
+
+        target = resolveModuleId(v, file, conf);
+
+        if (target && target.file) {
+            file.removeRequire(v);
+            file.addRequire(target.file.id);
+            compileFile(target.file);
+            moduleId = getModuleId(v, target.file, conf);
+            file.extras.paths[moduleId] = target.file.id;
+
+            start = converter(elem.loc.start.line, elem.loc.start.column);
+            inserts.push({
+                start: start,
+                len: elem.raw.length,
+                content: info.quote + moduleId + info.quote
+            });
+        } else if (target && target.isFisId) {
+            file.removeRequire(v);
+            file.addRequire(target.path);
+            moduleId = target.path.replace(/\.js/, '');
+            file.extras.paths[moduleId] = target.path;
+
+            start = converter(elem.loc.start.line, elem.loc.start.column);
+            inserts.push({
+                start: start,
+                len: elem.raw.length,
+                content: info.quote + moduleId + info.quote
+            });
+        } else {
+            fis.log.warning('Can not find module `' + v + '` in [' + file.subpath + ']');
+        }
+    });
+
+    content = bulkReplace(content, inserts);
 
     return content;
+}
+
+function travel(info, visitor, child) {
+    visitor(info, !child);
+
+    if (info.modules && info.modules) {
+        info.modules.forEach(function(node) {
+            travel(node, visitor, true);
+        });
+    }
 }

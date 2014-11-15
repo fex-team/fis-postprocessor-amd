@@ -37,7 +37,7 @@ var Fis = (function() {
             }
             tmp.dir(function(err, path) {
                 if (err) throw err;
-                argsPre.push('-d', path);
+                argsPre.push('-cd', path);
                 if (coverage) {
                     reportDir = 'coverage/sub' + count++;
                     argsPre.splice(0, 0, 'cover', '--dir', reportDir);

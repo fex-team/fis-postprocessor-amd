@@ -1,12 +1,14 @@
 {
   "name": "fis-postprocessor-amd",
-  "version": "0.1.8",
+  "version": "0.2.0-beta",
   "description": "fis-postprocessor-amd ===========================",
   "main": "index.js",
   "scripts": {
     "test": "mocha --reporter dot --check-leaks test/",
     "test-cov": "env istanbul=1 mocha --reporter dot --check-leaks test/",
-    "test-travis": "env istanbul=1 istanbul_report=lcovonly mocha --reporter spec --check-leaks test/"
+    "test-travis": "env istanbul=1 istanbul_report=lcovonly mocha --reporter spec --check-leaks test/",
+    "dev": "rm -rf debug && node ./node_modules/fis/bin/fis release -cf ./test/fixtures/internal_amd/fis-conf.js -r ./test/fixtures/internal_amd -d ./debug",
+    "debug": "node --debug --debug-brk ./node_modules/fis/bin/fis release -cf ./test/fixtures/internal_amd/fis-conf.js -r ./test/fixtures/internal_amd -d ./debug"
   },
   "repository": {
     "type": "git",

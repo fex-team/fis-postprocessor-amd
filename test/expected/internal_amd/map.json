@@ -5,7 +5,24 @@
             "type": "js",
             "extras": {
                 "moduleId": "script"
-            }
+            },
+            "deps": [
+                "./b"
+            ]
+        },
+        "script2.js": {
+            "uri": "/script2.js",
+            "type": "js",
+            "extras": {
+                "paths": {
+                    "script": "script.js"
+                },
+                "moduleId": "script2"
+            },
+            "deps": [
+                "a",
+                "script.js"
+            ]
         }
     },
     "pkg": {}
