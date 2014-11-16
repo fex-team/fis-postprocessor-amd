@@ -5,7 +5,7 @@
         var define = function() {
 
         };
-        
+
         var require = function() {
 
         }
@@ -27,4 +27,6 @@
     define(function() {
         return 'I know, this is a mistake.';
     });
+
+    return require('./b');
 });
