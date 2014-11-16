@@ -321,7 +321,7 @@ function wrapAMD(content, file, conf, shim) {
             return deps.join(', ');
         })()+');\n' + affix;
     } else if (shim.exports) {
-        affix = 'module.exports = ' + shim.exports + ';\n' + affix;
+        affix = '\nmodule.exports = ' + shim.exports + ';\n' + affix;
     }
 
     return prefix + content + affix;
@@ -751,14 +751,15 @@ function _parseJs(content, file, conf) {
                 args = argsRaw.concat();
             }
 
-            if (file.subpath === '/amd/deepDependency/level3.js') {
-                debugger;
-            }
-
 
             // module 中的 require(string) 列表。
             if (node.requires && node.requires.length) {
                 node.requires.forEach(function(item) {
+
+                    if (item.isLocal && item.isLocal.defs[0].name !== module.factory.params[0]) {
+                        return;
+                    }
+
                     var elem = item.node.arguments[0];
                     var v = elem.value;
                     var info = fis.util.stringQuote(elem.raw);
