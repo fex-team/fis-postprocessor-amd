@@ -807,7 +807,7 @@ function _parseJs(content, file, conf) {
                         moduleId = v;
                     }
 
-                    deps.push(info.quote + moduleId + info.quote);
+                    deps.push(info.quote + moduleId + (target.pluginPath ? '!' + target.pluginPath : '') + info.quote);
                 });
 
                 if (conf.forwardDeclaration) {
