@@ -725,7 +725,7 @@ function _parseJs(content, file, conf) {
 
                         file.extras.paths[moduleId] = target.file.id;
 
-                        deps.push(info.quote + moduleId + info.quote);
+                        deps.push(info.quote + moduleId + (target.pluginPath ? '!' + target.pluginPath : '') + info.quote);
                         argname = argsRaw.shift();
                         argname && args.push(argname);
                     } else if (target && target.isFisId) {
@@ -733,7 +733,7 @@ function _parseJs(content, file, conf) {
                         moduleId = target.path.replace(/\.js$/, '');
                         file.extras.paths[moduleId] = target.path;
 
-                        deps.push(moduleId);
+                        deps.push(info.quote + moduleId + (target.pluginPath ? '!' + target.pluginPath : '') + info.quote);
                         argname = argsRaw.shift();
                         argname && args.push(argname);
                     } else {
@@ -778,7 +778,7 @@ function _parseJs(content, file, conf) {
                         inserts.push({
                             start: start,
                             len: elem.raw.length,
-                            content: info.quote + moduleId + info.quote
+                            content: info.quote + moduleId + (target.pluginPath ? '!' + target.pluginPath : '') + info.quote
                         });
 
                         // 非依赖前置
@@ -795,7 +795,7 @@ function _parseJs(content, file, conf) {
                         inserts.push({
                             start: start,
                             len: elem.raw.length,
-                            content: info.quote + moduleId + info.quote
+                            content: info.quote + moduleId + (target.pluginPath ? '!' + target.pluginPath : '') + info.quote
                         });
 
                         // 非依赖前置
@@ -807,7 +807,7 @@ function _parseJs(content, file, conf) {
                         moduleId = v;
                     }
 
-                    deps.push(info.quote + moduleId + info.quote);
+                    deps.push(info.quote + moduleId + (target.pluginPath ? '!' + target.pluginPath : '') + info.quote);
                 });
 
                 if (conf.forwardDeclaration) {
@@ -952,7 +952,7 @@ function _parseJs(content, file, conf) {
                 inserts.push({
                     start: start,
                     len: elem.raw.length,
-                    content: info.quote + moduleId + info.quote
+                    content: info.quote + moduleId + (target.pluginPath ? '!' + target.pluginPath : '') + info.quote
                 });
 
             } else if (target && target.isFisId) {
@@ -974,7 +974,7 @@ function _parseJs(content, file, conf) {
                 inserts.push({
                     start: start,
                     len: elem.raw.length,
-                    content: info.quote + moduleId + info.quote
+                    content: info.quote + moduleId + (target.pluginPath ? '!' + target.pluginPath : '') + info.quote
                 });
             } else {
                 fis.log.warning('Can not find module `' + v + '` in [' + file.subpath + ']');
@@ -1002,7 +1002,7 @@ function _parseJs(content, file, conf) {
             inserts.push({
                 start: start,
                 len: elem.raw.length,
-                content: info.quote + moduleId + info.quote
+                content: info.quote + moduleId + (target.pluginPath ? '!' + target.pluginPath : '') + info.quote
             });
         } else if (target && target.isFisId) {
             file.removeRequire(v);
@@ -1014,7 +1014,7 @@ function _parseJs(content, file, conf) {
             inserts.push({
                 start: start,
                 len: elem.raw.length,
-                content: info.quote + moduleId + info.quote
+                content: info.quote + moduleId + (target.pluginPath ? '!' + target.pluginPath : '') + info.quote
             });
         } else {
             fis.log.warning('Can not find module `' + v + '` in [' + file.subpath + ']');
