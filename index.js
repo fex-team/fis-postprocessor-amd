@@ -372,6 +372,23 @@ function resolveModuleId(id, file, conf, modulename) {
         id = id.substring(0, idx);
     }
 
+    if (pluginPath) {
+        info = fis.uri(pluginPath, file.dirname);
+        if (info.file && info.file.isFile()) {
+
+            if (info.file.useHash && fis.compile.settings.hash) {
+                compileFile(info.file);
+            }
+
+            var query = (info.file.query && info.query) ? '&' + info.query.substring(1) : info.query;
+            var url = info.file.getUrl(fis.compile.settings.hash, fis.compile.settings.domain);
+            var hash = info.hash || info.file.hash;
+            pluginPath = info.quote + url + query + hash + info.quote;
+        }
+
+        info = null;
+    }
+
     // convert baseUrl
     if (baseUrl[0] !== '/') {
         baseUrl = pth.join(root, baseUrl);
@@ -801,7 +818,8 @@ function _parseJs(content, file, conf) {
                         }
                     } else {
                         fis.log.warning('Can not find module `' + v + '` in [' + file.subpath + ']');
-                        moduleId = v;
+                        deps.push(info.quote + v + info.quote);
+                        return;
                     }
 
                     deps.push(info.quote + moduleId + (target.pluginPath ? '!' + target.pluginPath : '') + info.quote);
