@@ -336,6 +336,25 @@ describe('Compatible', function() {
     });
 });
 
+describe('script in html like file.', function() {
+    this.timeout(15000);
+
+    it('amd test', function(done) {
+        Fis.run('-r', resolve('fixtures/htmllike'), '-f', resolve('fixtures/htmllike/fis-conf.js'), function(path) {
+            // console.log(path);
+            compareFolder(resolve('expected/htmllike'), path, function(name, src, dst) {
+                if (typeof src === 'undefined') {
+                    assert.ok(false, name + ' file not match');
+                } else {
+                    assert.ok(src === dst, name + ' content not match');
+                }
+            });
+            fis.util.del(path);
+            done();
+        });
+    });
+});
+
 // 收尾输出 coverage
 describe('finish', function() {
     it('ignore this', function(callback) {

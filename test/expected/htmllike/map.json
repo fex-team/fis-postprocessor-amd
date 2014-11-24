@@ -1,0 +1,9 @@
+{
+    "res": {
+        "module.js": {
+            "uri": "/module.js",
+            "type": "js"
+        }
+    },
+    "pkg": {}
+}

@@ -28,11 +28,13 @@ function init(conf) {
 
     // 左分隔符
     var ld = conf.left_delimiter ||
-            fis.config.get('settings.template.left_delimiter') || '{%';
+            fis.config.get('settings.template.left_delimiter') ||
+            fis.config.get('settings.smarty.left_delimiter') || '{%';
 
     // 右分隔符
     var rd = conf.right_delimiter ||
-            fis.config.get('settings.template.right_delimiter') || '%}';
+            fis.config.get('settings.template.right_delimiter') ||
+            fis.config.get('settings.smarty.right_delimiter') || '%}';
 
     // 正则特殊字符转义
     ld = pregQuote(ld);
@@ -41,14 +43,13 @@ function init(conf) {
     var reg;
 
     // smarty script tag
-    reg = new RegExp('('+ld+'script(?:\\s+[\\s\\S]*?["\'\\s\\w\\/]'+rd+'|\\s*'+rd+'))([\\s\\S]*?)(?='+ld+'\\/script'+rd+'|$)', 'ig');
+    reg = new RegExp('('+ld+'script(?:|[\\s\\S]+?)'+rd+')([\\s\\S]*?)(?='+ld+'\\/script'+rd+')', 'ig');
     parser.scriptsReg.push(reg);
 
-
     // swig script tag
-    reg = new RegExp('('+ld+'\\s*script\\s+[\\s\\S]*?\\s*' +
+    reg = new RegExp('('+ld+'\\s*script(?:|[\\s\\S]+?)' +
             rd + ')([\\s\\S]*?)(?=' + ld + '\\s*endscript\\s*' +
-            rd + '|$)', 'ig');
+            rd + ')', 'ig');
 
     parser.scriptsReg.push(reg);
 
@@ -103,7 +104,8 @@ function init(conf) {
     });
 
     map = (function() {
-        var tmpFile = fis.project.getTempPath('plugin/amd.json');
+        var id = fis.util.md5(fis.project.getProjectPath(), 10);
+        var tmpFile = fis.project.getTempPath('plugin/amd-' + id + '.json');
         var clean = false;
         var opt;
 
@@ -158,7 +160,7 @@ var parser = module.exports = function(content, file, conf) {
 
     if (file.isHtmlLike) {
         content = parser.parseHtml(content, file, conf);
-    } else if (file.rExt === '.js') {
+    } else if (file.isJsLike) {
         content = parser.parseJs(content, file, conf);
     }
 
@@ -192,7 +194,7 @@ parser.defaultOptions = {
 
 // 默认 script 正则
 parser.scriptsReg = [
-    /(<script(?:\s+[\s\S]*?["'\s\w\/]>|\s*>))([\s\S]*?)(?=<\/script>|$)/ig
+    /(<script(?:|[\s\S]+?)>)([\s\S]*?)(?=<\/script>|$)/ig
 ];
 
 // like array.splice
