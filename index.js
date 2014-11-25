@@ -350,6 +350,32 @@ function findPkg(pkg, list) {
     return null;
 }
 
+function findPkgByPath(list, id, file, baseUrl, root) {
+    var i = 0;
+    var len = list.length;
+    var current, item;
+
+    if (id[0] === '/') {
+        current = pth.resolve(id, baseUrl);
+    } else {
+        current = pth.resolve(id, file.dirname);
+    }
+
+
+    for (; i < len; i++) {
+        item = list[i];
+
+        if (
+            pth.resolve(baseUrl, item.location) === current ||
+            pth.resolve(root, item.location) === current
+                ) {
+            return list[i];
+        }
+    }
+
+    return null;
+}
+
 // 查找 module id.
 // 具体请查看 https://github.com/amdjs/amdjs-api/blob/master/CommonConfig.md
 //
@@ -364,7 +390,7 @@ function resolveModuleId(id, file, conf, modulename) {
     var root = fis.project.getProjectPath();
     var connector = fis.config.get('namespaceConnector', ':');
     var dirname = file.dirname;
-    var pluginPath, info, m, pkg, path, dirs, item;
+    var pluginPath, info, m, pkg, path, dirs, item, main;
     var dir, lastdir, i, len, ns, subpath, idx, sibling, resolved;
 
     // 支持 amd plugin
@@ -396,6 +422,15 @@ function resolveModuleId(id, file, conf, modulename) {
         baseUrl = pth.join(root, baseUrl);
     }
     baseUrl = pth.resolve(baseUrl);
+
+    if (id === '.' || id.substring(id.length-1) === '/') {
+        // 真麻烦，还得去查找当前目录是不是 match 一个 packagers。
+        // 如果是，得找到 main 的设置。
+        pkg = findPkgByPath(pkgs, id, file, baseUrl, root);
+        main = pkg && pkg.main || 'main';
+
+        id = id === '.' ? './' + main : id + main;
+    }
 
     idx = id.indexOf(connector);
     if (~idx && (ns = id.substring(0, idx))) {
@@ -646,7 +681,7 @@ parser.parseJs = function(content, file, conf) {
     try {
         content = _parseJs(content, file, conf);
     } catch (e) {
-        fis.log.warning(e.message);
+        fis.log.warning('Got Error: '+e.message+' while parse ['+file.subpath+']');
     }
 
     return content;
