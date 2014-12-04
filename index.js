@@ -180,6 +180,11 @@ parser.defaultOptions = {
     // 总开关，是否把全局环境下的 require([xxx], cb); 写法当成同步，提前加载依赖。
     globalAsyncAsSync: true,
 
+    // 忽略署名的模块
+    // 如果要让模块跨 namespace 依赖，如果目标模块是署名的，很容易出问题。
+    // 建议将此属性设置成 true.
+    noOnymousModule: false,
+
     // module id 模板
     moduleIdTpl: function(file) {
         return file.id.replace(/\.js$/, '');
@@ -242,7 +247,7 @@ function getModuleId(ref, file, conf, modulename) {
     var key;
 
     // ref 为用户指定的 module id 原始值
-    if (ref) {
+    if (ref && !conf.noOnymousModule) {
         if (ref[0] !== '.' && ref[0] !== '/' && map.get(ref)) {
             // 非相对路径且非绝对路径，则看看这个 module id 是否已经定义过。
             // 如果定义过，则保留不变。
@@ -454,7 +459,7 @@ function resolveModuleId(id, file, conf, modulename) {
         if (modulename) {
             resolved = pth.join(pth.dirname(modulename), id);
 
-            if (resolved && map.get(resolved)) {
+            if (resolved && !conf.noOnymousModule && map.get(resolved)) {
                 info = fis.uri(map.get(resolved), root);
             }
         }
@@ -468,7 +473,7 @@ function resolveModuleId(id, file, conf, modulename) {
 
         // combine 模式
         // 看看当前文件里面已经有没有定义了的 module
-        if (!info.file && (sibling = getKeyByValue(map.get(), file.subpath))) {
+        if (!info.file && !conf.noOnymousModule && (sibling = getKeyByValue(map.get(), file.subpath))) {
             id = pth.join(sibling.replace(/(\/|\\)[^\/\\]+$/, ''), id);
 
             if (id && map.get(id)) {
@@ -496,7 +501,7 @@ function resolveModuleId(id, file, conf, modulename) {
 
         // 先查找 map 中是否已经注册
         // fixme 跨模块会不会有问题？
-        if (map.get(path)) {
+        if (!conf.noOnymousModule && map.get(path)) {
             info = fis.uri(map.get(path), root);
         } else if (paths[pkg]) {
             // 再查找 conf.paths
@@ -714,7 +719,7 @@ function _parseJs(content, file, conf) {
     // 先把所有自己指定了 id 的 module 跟文件路径关联起来。
     // 后面查找的时候有用。
     var affected = false;
-    travel(info, function(node) {
+    conf.noOnymousModule || travel(info, function(node) {
         var module = node.module;
 
         if (module && module.id) {
@@ -918,27 +923,42 @@ function _parseJs(content, file, conf) {
             }
 
             // 添加 module id
-            if (!module.id) {
+            if (!module.id || conf.noOnymousModule) {
 
                 if (file._anonymousDefineCount) {
-                    fis.log.error('The file has more than one anonymous ' +
+                    throw new Error('The file has more than one anonymous ' +
                             'define');
                     return;
                 }
 
+                var originId = module.id;
                 module.id = moduleId = getModuleId('', file, conf);
                 file.extras.moduleId = file.extras.moduleId || moduleId;
-                start = module.node.loc.start;
-                start = converter(start.line, start.column);
-                start += /^define\s*\(/.exec(content.substring(start))[0].length;
 
-                inserts.push({
-                    start: start,
-                    len: 0,
-                    content: '\''+moduleId+'\', '
-                });
+                if (module.idLoc) {
+                    start = module.idLoc.start;
+                    inserts.push({
+                        start: converter(start.line, start.column),
+                        len: originId.length + 2,
+                        content: '\'' + moduleId + '\''
+                    });
+                } else {
+                    start = module.node.loc.start;
+                    start = converter(start.line, start.column);
+                    start += /^define\s*\(/.exec(content.substring(start))[0].length;
+
+                    inserts.push({
+                        start: start,
+                        len: 0,
+                        content: '\''+moduleId+'\', '
+                    });
+                }
+
+                file._anonymousDefineCount = file._anonymousDefineCount || 0;
                 file._anonymousDefineCount++;
             } else {
+                // 署名模块
+                //
                 file.extras.moduleId = module.id;
             }
 

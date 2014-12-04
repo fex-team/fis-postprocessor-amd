@@ -355,6 +355,25 @@ describe('script in html like file.', function() {
     });
 });
 
+describe('noOnymousModule', function() {
+    this.timeout(15000);
+
+    it('amd test', function(done) {
+        Fis.run('-r', resolve('fixtures/noOnymousModule'), '-f', resolve('fixtures/noOnymousModule/fis-conf.js'), function(path) {
+            // console.log(path);
+            compareFolder(resolve('expected/noOnymousModule'), path, function(name, src, dst) {
+                if (typeof src === 'undefined') {
+                    assert.ok(false, name + ' file not match');
+                } else {
+                    assert.ok(src === dst, name + ' content not match');
+                }
+            });
+            fis.util.del(path);
+            done();
+        });
+    });
+});
+
 // 收尾输出 coverage
 describe('finish', function() {
     it('ignore this', function(callback) {

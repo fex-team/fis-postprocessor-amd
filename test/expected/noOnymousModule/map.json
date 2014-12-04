@@ -1,0 +1,33 @@
+{
+    "res": {
+        "lib/abc.js": {
+            "uri": "/lib/abc.js",
+            "type": "js",
+            "extras": {
+                "moduleId": "lib/abc"
+            }
+        },
+        "lib/bcd.js": {
+            "uri": "/lib/bcd.js",
+            "type": "js",
+            "extras": {
+                "moduleId": "lib/bcd"
+            }
+        },
+        "lib/ooo.js": {
+            "uri": "/lib/ooo.js",
+            "type": "js",
+            "extras": {
+                "moduleId": "lib/ooo"
+            }
+        },
+        "lib/xxx.js": {
+            "uri": "/lib/xxx.js",
+            "type": "js",
+            "extras": {
+                "moduleId": "lib/xxx"
+            }
+        }
+    },
+    "pkg": {}
+}
