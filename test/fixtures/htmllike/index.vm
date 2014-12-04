@@ -27,6 +27,12 @@
 {%script id="xxx"
     name="xxx"%}require(['./module']);{%endscript%}
 
+{% script %}require(['./module']);{% endscript %}
+{% script id="xxx" %}require(['./module']);{% endscript %}
+{% script type="text/javascript" %}require(['./module']);{% endscript %}
+{% script id="xxx"
+    name="xxx" %}require(['./module']);{% endscript %}
+
 </body>
 </html>
 <script>require(['./module']);
