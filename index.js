@@ -281,6 +281,10 @@ function getKeyByValue(obj, val) {
 function getModuleId(ref, file, conf, modulename) {
     var key;
 
+    if (file.extras.moduleId) {
+        return file.extras.moduleId;
+    }
+
     // ref 为用户指定的 module id 原始值
     if (ref && !conf.noOnymousModule) {
         if (ref[0] !== '.' && ref[0] !== '/' && map.get(ref)) {
