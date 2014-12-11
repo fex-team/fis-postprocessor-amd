@@ -64,6 +64,41 @@ function init(conf) {
         }
     }
 
+    // 读取 components 配置。
+    var componentsDir = (fis.config.get('component.dir') || '/components').replace(/\/$/, '');
+
+    if (componentsDir[0] !== '/') {
+        componentsDir = '/' + componentsDir;
+    }
+
+    var root = fis.project.getProjectPath();
+    var includer =  new RegExp('^' + fis.util.escapeReg(root + componentsDir + '/') + '.*?component\.json$', 'i');
+
+    fis.util.find(root, includer).forEach(function(file){
+        var cName = pth.basename(pth.dirname(file));
+        var json = {};
+
+        try {
+            json =require(file)
+        } catch (e) {
+            fis.log.warning('unable to load component.json of [' + cName + ']');
+        }
+
+        json.name = json.name || cName;
+
+        conf.packages.push({
+            name: json.name,
+            location: componentsDir + '/' + cName,
+            main: json.main || 'main'
+        });
+
+        if (json.shim) {
+            Object.keys(json.shim).forEach(function(path) {
+                conf.shim[componentsDir + '/' + cName + '/' + path] = json.shim[path];
+            });
+        }
+    });
+
     // normalize shim
     if (conf.shim) {
         var shim = conf.shim;
@@ -695,6 +730,11 @@ parser.parseJs = function(content, file, conf) {
 function _parseJs(content, file, conf) {
     var hasDefined = /(?:^|\s)define\s*\(/i.exec(content);
     var info;
+
+    // 如果是 html 或者 vm 或者 tpl 如果压根就没有 amd 用法，那就跳过吧。
+    if (!hasDefined && file.isHtmlLike && !/(?:^|\s)(require|require\.async)\s*\(/i.exec(content)) {
+        return content;
+    }
 
     // 能用正则检测出来，那就先用正则检测把，语法分析，耗时太长
     if (!hasDefined || (info = getInfo(content), !info.modules || !info.modules.length)) {
