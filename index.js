@@ -1038,7 +1038,7 @@ function _parseJs(content, file, conf) {
         //
         // 当然这里有个总开关，可以通过设置 `globalAsyncAsSync` 为 false 来关闭此功能。
         // 另外可以在 require 异步用法的语句前面加上 require async 的注释来，标记异步。
-        var async = conf.globalAsyncAsSync ? !req.markSync : req.markAsync;
+        var async = conf.globalAsyncAsSync ? req.markAsync : !req.markSync;
 
         (req.deps || []).forEach(function(elem) {
             var v = elem.raw;
