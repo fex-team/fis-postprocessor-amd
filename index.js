@@ -185,6 +185,9 @@ var parser = module.exports = function(content, file, conf) {
 
     init(conf);
 
+    // 标记一下，避免重复compile
+    hash[file.realpath] = true;
+
     file.extras = file.extras || {};
 
     // 异步依赖
@@ -204,6 +207,7 @@ var parser = module.exports = function(content, file, conf) {
     isEmptyObject(file.extras.paths) && (delete file.extras.paths);
     isEmptyObject(file.extras) && (delete file.extras);
 
+    delete hash[file.realpath];
     return content;
 };
 
@@ -247,9 +251,7 @@ var hash = {};
 function compileFile( file ) {
     var id = file.realpath;
 
-    if (hash[id]) {
-        return;
-    } else if (file.compiled) {
+    if (hash[id] || file.compiled) {
         return;
     }
 
@@ -281,7 +283,7 @@ function getKeyByValue(obj, val) {
 function getModuleId(ref, file, conf, modulename) {
     var key;
 
-    if (file.extras.moduleId) {
+    if (file.extras && file.extras.moduleId) {
         return file.extras.moduleId;
     }
 
@@ -850,7 +852,6 @@ function _parseJs(content, file, conf) {
             else {
                 args = argsRaw.concat();
             }
-
 
             // module 中的 require(string) 列表。
             if (node.requires && node.requires.length) {
