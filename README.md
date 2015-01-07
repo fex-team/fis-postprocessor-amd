@@ -146,6 +146,7 @@ fis.config.merge({
         }
     });
     ```
+2. `noOnymousModule` 默认为 `false`，不允许署名模块，设置为 true 后，署名模块将被当作匿名模块处理。
 3. `globalAsyncAsSync` 默认为 `true`，因为全局 `require` 方法不支持同步加载，只能异步加载。
 
     ```javascript
