@@ -918,15 +918,15 @@ function _parseJs(content, file, conf) {
                         args.push('require');
                     }
 
-                    if (args[0] === 'require' && deps[0].substring(1, 8) !== 'require') {
+                    if (args[0] === 'require' && deps[0] !== '\'require\'' && deps[0] !== '\"require\"') {
                         deps.unshift('\'require\'');
                     }
 
-                    if (args[1] === 'exports' && deps[1].substring(1, 8) !== 'exports') {
+                    if (args[1] === 'exports' && deps[1] !== '\'exports\'' && deps[1] !== '\"exports\"') {
                         deps.splice(1, 0, '\'exports\'');
                     }
 
-                    if (args[2] === 'module' && deps[2].substring(1, 7) !== 'module') {
+                    if (args[2] === 'module' && deps[2] !== '\'module\'' && deps[2] !== '\"module\"') {
                         deps.splice(2, 0, '\'module\'');
                     }
                 }
