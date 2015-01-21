@@ -686,6 +686,13 @@ function bulkReplace(content, arr) {
             var diff = b.start - a.start;
 
             if (!diff) {
+                a.weight = a.weight>>0;
+                b.weight = b.weight>>0;
+
+                if (a.weight !== b.weight) {
+                    return b.weight - a.weight;
+                }
+
                 return b.len - a.len;
             }
 
@@ -985,7 +992,8 @@ function _parseJs(content, file, conf) {
                     inserts.push({
                         start: converter(start.line, start.column),
                         len: originId.length + 2,
-                        content: '\'' + moduleId + '\''
+                        content: '\'' + moduleId + '\'',
+                        weight: -5
                     });
                 } else {
                     start = module.node.loc.start;
@@ -995,7 +1003,8 @@ function _parseJs(content, file, conf) {
                     inserts.push({
                         start: start,
                         len: 0,
-                        content: '\''+moduleId+'\', '
+                        content: '\''+moduleId+'\', ',
+                        weight: -5
                     });
                 }
 
