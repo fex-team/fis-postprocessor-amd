@@ -99,15 +99,39 @@ function init(conf) {
         }
     });
 
+    conf.packages = conf.packages.map(function(item) {
+
+        if (typeof item === 'string') {
+            item = {
+                name: item
+            }
+        }
+
+        return item;
+    });
+
     // normalize shim
     if (conf.shim) {
         var shim = conf.shim;
         var normalized = {};
+        var paths = conf.paths || {};
+        var baseUrl = conf.baseUrl || '.';
+        var root = fis.project.getProjectPath();
+        var packages = conf.packages || [];
 
         Object.keys(shim).forEach(function(key) {
             var val = shim[key];
+            var info, filepath, pkg;
 
-            var info = fis.uri(key, fis.project.getProjectPath());
+            if (paths[key]) {
+                filepath = pth.join(baseUrl, paths[key]);
+                info = fis.uri(filepath, root);
+                info.file || (info = fis.uri(filepath + '.js', root));
+            } else if ((pkg = findPkg(key, packages))) {
+                // todo
+            } else {
+                info = fis.uri(key, root);
+            }
 
             if (!info.file) {
                 return;
@@ -126,17 +150,6 @@ function init(conf) {
 
         conf.shim = normalized;
     }
-
-    conf.packages = conf.packages.map(function(item) {
-
-        if (typeof item === 'string') {
-            item = {
-                name: item
-            }
-        }
-
-        return item;
-    });
 
     map = (function() {
         var id = fis.util.md5(fis.project.getProjectPath(), 10);
