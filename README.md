@@ -1,7 +1,7 @@
 fis-postprocessor-amd
 ===========================
 
-fis amd 支持，完全满足 [amdjs](https://github.com/amdjs/amdjs-api) 规范。[demo](https://github.com/fex-team/fis-amd-demo)
+fis amd 支持，完全满足 [amdjs](https://github.com/amdjs/amdjs-api) 规范。[demo][]
 
 
 ## 如何使用？
@@ -10,15 +10,15 @@ fis amd 支持，完全满足 [amdjs](https://github.com/amdjs/amdjs-api) 规范
 npm install -g fis-postprocessor-amd
 ```
 
-配置 fisconf.js
+配置 fis-conf.js
 
 ```javascript
 fis.config.merge({
-    modules: {
-
+    modules: 
         postprocessor: {
-            tpl: 'amd',
-            js: 'amd'
+            tpl: 'amd', // 如果你的模板是.tpl结尾的模板，如 Smarty、Swig 模板
+            js: 'amd',
+            html: 'amd' // 如果你的项目中也有一些 html 文件需要使用 AMD
         }
     }
 });
@@ -170,4 +170,9 @@ fis.config.merge({
 7. `paths` 请查看上面的说明
 8. `packages` 请查看上面的说明
 
+## 注意
 
+- **合并打包** AMD 组件时，需要使用 fis 的另一个合包插件[fis-postpackager-autoload][]，可以查看[demo][]中的`fis-conf.js`
+
+[fis-postpackager-autoload]: https://www.npmjs.com/package/fis-postpackager-autoload
+[demo]: https://github.com/fex-team/fis-amd-demo
