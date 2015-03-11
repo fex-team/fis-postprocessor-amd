@@ -172,7 +172,11 @@ fis.config.merge({
 
 ## 注意
 
-- **合并打包** AMD 组件时，需要使用 fis 的另一个合包插件[fis-postpackager-autoload][]，可以查看[demo][]中的`fis-conf.js`
+- 在用[fis][]时，**合并打包** AMD 组件时，需要使用 fis 的另一个合包插件[fis-postpackager-autoload][]，可以查看[demo][]中的`fis-conf.js`的设置；
+- 在用[fis-plus][]时，参考[fisp的demo][]；
 
 [fis-postpackager-autoload]: https://www.npmjs.com/package/fis-postpackager-autoload
 [demo]: https://github.com/fex-team/fis-amd-demo
+[fis]: https://github.com/fex-team/fis
+[fisp的demo]: https://github.com/fex-team/fisp-amd-demo
+[fis-plus]: https://github.com/fex-team/fis-plus
