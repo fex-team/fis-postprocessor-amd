@@ -166,11 +166,15 @@ function init(conf) {
             //
         }
 
-        if (fis.util.exists(tmpFile) && !clean) {
-            opt = fis.util.readJSON(tmpFile);
-        } else {
-            opt = {};
+        if (fis.util.exists(tmpFile)) {
+            if (clean) {
+                fis.util.del(tmpFile);
+            } else {
+                opt = fis.util.readJSON(tmpFile);
+            }
         }
+
+        opt = opt || {};
 
         return {
             get: function(key) {
