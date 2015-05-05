@@ -159,7 +159,7 @@ function init(conf) {
 
         try {
             var args = process.title;
-            if (/\-[^\-]*c/.exec(args) || /\-\-clean/i.exec(args)) {
+            if (/\-[^\- ]*c/.exec(args) || /\-\-clean/i.exec(args)) {
                 clean = true;
             }
         } catch (e) {
