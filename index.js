@@ -812,7 +812,7 @@ function _parseJs(content, file, conf) {
         var module = node.module;
 
         // 处理模块定义中的替换。
-        if (module) {
+        if (module && file.isMod !== false) {
             var argsRaw = [];   // factory 处理前的形参列表。
             var deps = [];  // 最终依赖列表
             var args = [];  // 最终 factory 的形参列表
