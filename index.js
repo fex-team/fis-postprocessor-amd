@@ -459,8 +459,9 @@ function resolveModuleId(id, file, conf, modulename) {
     // 支持 amd plugin
     idx = id.indexOf('!');
     if (~idx) {
-        pluginPath = id.substring(idx + 1);
-        id = id.substring(0, idx);
+        id = id.substring(idx + 1);
+		pluginPath = id.substring(0, idx);
+		
     }
 
     if (pluginPath) {
