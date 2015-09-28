@@ -63,6 +63,25 @@ fis.config.merge({
 
     });
     ```
+
+配置需要模块化路径
+    
+    fis.config.set('roadmap.path', [
+    
+        {
+            reg: /\/_[^\/]*?$/i,
+            release: false
+        },
+    
+        // 标记 isMod 为 true, 这样，在 modules 里面的满足 commonjs 规范的 js 会自动包装成 amd js, 以至于能在浏览器中运行。
+        //
+        {
+            reg: /^\/modules\/(.*\.js)$/i,
+            isMod: true,
+            release: '/modules\/$1'
+        },
+    ]);
+
 1. 关于依赖写法（文件后缀.js 可写可不写）
     * 相对路径 `./a` 或者 `../parent/a`
     * 绝对路径 `/module/a` （基于baseUrl的绝对路径）
